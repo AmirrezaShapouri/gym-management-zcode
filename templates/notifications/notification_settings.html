@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تنظیمات پیامک - مدیریت باشگاه</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}"><i class="fas fa-dumbbell"></i> مدیریت باشگاه</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3"><i class="fas fa-user"></i> مدیر سیستم</span>
+                <button class="navbar-toggler d-md-none" type="button" aria-label="باز و بسته کردن منو">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'dashboard' %}"><i
+                                    class="fas fa-tachometer-alt"></i> داشبورد</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'member_list' %}"><i
+                                    class="fas fa-users"></i> اعضا</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'class_list' %}"><i
+                                    class="fas fa-chalkboard-teacher"></i> کلاس‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance' %}"><i
+                                    class="fas fa-clipboard-check"></i> حضور و غیاب</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance_history' %}"><i class="fas fa-history"></i> تاریخچه حضور</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'subscription_list' %}"><i
+                                    class="fas fa-ticket-alt"></i> اشتراک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'payment_list' %}"><i
+                                    class="fas fa-credit-card"></i> پرداخت‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'finance_dashboard' %}"><i
+                                    class="fas fa-chart-line"></i> امور مالی</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'expense_list' %}"><i
+                                    class="fas fa-receipt"></i> هزینه‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white active" href="{% url 'notification_list' %}"><i
+                                    class="fas fa-bell"></i> پیامک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'gym_settings' %}"><i
+                                    class="fas fa-cog"></i> تنظیمات باشگاه</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'profile' %}"><i
+                                    class="fas fa-user-circle"></i> پروفایل</a></li>
+                        <li class="nav-item"><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link text-danger border-0 bg-transparent"><i
+                                    class="fas fa-sign-out-alt"></i> خروج</button></form></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">تنظیمات پیامک</h1>
+                    <a href="{% url 'notification_list' %}" class="btn btn-secondary">بازگشت</a>
+                </div>
+
+
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="save_global" value="1">
+                            {% for field in settings_form %}<div class="form-check mb-2">{{ field }}{{ field.label_tag }}</div>{{ field.errors }}{% endfor %}
+                            <button type="submit" class="btn btn-primary">ذخیره تنظیمات سراسری</button>
+                            <div hidden>
+                            <div class="mb-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enableSms" checked>
+                                    <label class="form-check-label" for="enableSms">فعال‌سازی ارسال پیامک</label>
+                                </div>
+                            </div>
+
+                            <h5 class="mb-3">نوع پیامک‌ها</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="expirySms" checked>
+                                        <label class="form-check-label" for="expirySms">پیامک انقضای اشتراک</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="paymentSms" checked>
+                                        <label class="form-check-label" for="paymentSms">پیامک پرداخت</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="registrationSms" checked>
+                                        <label class="form-check-label" for="registrationSms">پیامک ثبت‌نام</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="reminderSms" checked>
+                                        <label class="form-check-label" for="reminderSms">پیامک یادآوری کلاس</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">ذخیره تنظیمات</button>
+                            </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="card shadow-sm mb-4">
+                    <form method="post"><div class="card-body">
+                        {% csrf_token %}<input type="hidden" name="save_members" value="1">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h5 class="card-title mb-1">انتخاب اعضا و نوع پیامک</h5>
+                                <p class="text-muted mb-0">پیامک موردنظر را برای هر عضو انتخاب کنید.</p>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> ذخیره ترجیحات</button>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="memberSearchInput" class="visually-hidden">جستجوی عضو</label>
+                                <div class="input-group">
+                                    <input type="search" class="form-control" id="memberSearchInput"
+                                        placeholder="جستجوی عضو..." autocomplete="off">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle member-selection-table">
+                                <thead>
+                                    <tr>
+                                        <th>عضو</th>
+                                        <th>پلن اشتراک</th>
+                                        <th class="text-center">یادآوری کلاس</th>
+                                        <th class="text-center">انقضای اشتراک</th>
+                                        <th class="text-center">پرداخت</th>
+                                        <th class="text-center">ثبت‌نام</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in member_rows %}<tr><td>{{ row.member.full_name }}</td><td>{% if row.member.latest_subscription %}{{ row.member.latest_subscription.plan_sessions_label }}{% else %}-{% endif %}</td>
+                                    <td class="text-center"><input class="form-check-input" type="checkbox" name="member_{{ row.member.pk }}_class_reminder" {% if row.class_reminder %}checked{% endif %}></td>
+                                    <td class="text-center"><input class="form-check-input" type="checkbox" name="member_{{ row.member.pk }}_subscription_expiry" {% if row.subscription_expiry %}checked{% endif %}></td>
+                                    <td class="text-center"><input class="form-check-input" type="checkbox" name="member_{{ row.member.pk }}_payment" {% if row.payment %}checked{% endif %}></td>
+                                    <td class="text-center"><input class="form-check-input" type="checkbox" name="member_{{ row.member.pk }}_registration" {% if row.registration %}checked{% endif %}></td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">عضوی ثبت نشده است.</td></tr>{% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div></form>
+                </div>
+
+                <footer class="footer mt-auto py-3 bg-light">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-6 text-md-end"><span class="text-muted">© ۱۴۰۳ مدیریت باشگاه - تمام حقوق
+                                    محفوظ است</span></div>
+                            <div class="col-md-6 text-md-start"><span class="text-muted">نسخه 1.0.0</span></div>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

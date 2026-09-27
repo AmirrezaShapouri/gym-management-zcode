@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جزئیات پرداخت - مدیریت باشگاه</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}"><i class="fas fa-dumbbell"></i> مدیریت باشگاه</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3"><i class="fas fa-user"></i> مدیر سیستم</span>
+                <button class="navbar-toggler d-md-none" type="button" aria-label="باز و بسته کردن منو">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'dashboard' %}"><i
+                                    class="fas fa-tachometer-alt"></i> داشبورد</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'member_list' %}"><i
+                                    class="fas fa-users"></i> اعضا</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'class_list' %}"><i
+                                    class="fas fa-chalkboard-teacher"></i> کلاس‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance' %}"><i
+                                    class="fas fa-clipboard-check"></i> حضور و غیاب</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance_history' %}"><i class="fas fa-history"></i> تاریخچه حضور</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'subscription_list' %}"><i
+                                    class="fas fa-ticket-alt"></i> اشتراک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white active" href="{% url 'payment_list' %}"><i
+                                    class="fas fa-credit-card"></i> پرداخت‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'finance_dashboard' %}"><i
+                                    class="fas fa-chart-line"></i> امور مالی</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'expense_list' %}"><i
+                                    class="fas fa-receipt"></i> هزینه‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white"
+                                href="{% url 'notification_list' %}"><i class="fas fa-bell"></i> پیامک‌ها</a>
+                        </li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'gym_settings' %}"><i
+                                    class="fas fa-cog"></i> تنظیمات باشگاه</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'profile' %}"><i
+                                    class="fas fa-user-circle"></i> پروفایل</a></li>
+                        <li class="nav-item"><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link text-danger border-0 bg-transparent"><i
+                                    class="fas fa-sign-out-alt"></i> خروج</button></form></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">جزئیات پرداخت</h1>
+                    <div><a href="{% url 'payment_list' %}" class="btn btn-secondary">بازگشت</a></div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <h5>اطلاعات پرداخت</h5>
+                                <hr>
+                                <p><strong>عضو:</strong> {{ payment.member.full_name }}</p>
+                                <p><strong>مبلغ:</strong> {{ payment.amount }} تومان</p>
+                                <p><strong>نوع:</strong> {{ payment.plan_label|default:'-' }}</p>
+                                <p><strong>تاریخ:</strong> {{ payment.date|date:'Y/m/d' }}</p>
+                                <p><strong>وضعیت:</strong> {{ payment.get_status_display }}</p>
+                                <p><strong>شماره تراکنش:</strong> {{ payment.reference }}</p>
+                                <p><strong>توضیحات:</strong> {{ payment.note|default:'-' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                                        <h5>{{ payment.get_status_display }}</h5>
+                                        <p class="text-muted">ثبت‌کننده: {{ payment.operator|default:'-' }}</p>
+                                        <a class="btn btn-outline-primary" href="{% url 'payment_list' %}">بازگشت به پرداخت‌ها</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="footer mt-auto py-3 bg-light">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-6 text-md-end"><span class="text-muted">© ۱۴۰۳ مدیریت باشگاه - تمام حقوق
+                                    محفوظ است</span></div>
+                            <div class="col-md-6 text-md-start"><span class="text-muted">نسخه 1.0.0</span></div>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأیید حذف کلاس - مدیریت باشگاه</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-6">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body text-center p-5">
+                        <div class="mb-4">
+                            <i class="fas fa-exclamation-triangle text-danger fa-4x"></i>
+                        </div>
+                        <h3 class="mb-3">آیا از حذف این کلاس اطمینان دارید؟</h3>
+                        <p class="text-muted">کلاس: <strong>{{ gym_class.name }}</strong></p>
+                        <p class="text-danger"><small>این عمل غیرقابل بازگشت است و تمام اطلاعات مرتبط حذف خواهد شد.</small></p>
+                        <form method="post" class="d-flex justify-content-center gap-3 mt-4">{% csrf_token %}<button type="submit" class="btn btn-danger btn-lg">بله، حذف کن</button><a href="{% url 'class_list' %}" class="btn btn-secondary btn-lg">انصراف</a></form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

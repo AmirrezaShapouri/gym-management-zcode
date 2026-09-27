@@ -1,0 +1,83 @@
+from django.contrib import messages
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods, require_POST
+
+from core.mixins import portal_user_required
+from .forms import MemberForm
+from .models import Member
+
+
+@portal_user_required
+def member_list(request):
+	members = Member.objects.select_related('gym_class', 'coach').prefetch_related(
+		'subscriptions__plan'
+	)
+	query = request.GET.get('q', '').strip()
+	if query:
+		members = members.filter(
+			Q(first_name__icontains=query)
+			| Q(last_name__icontains=query)
+			| Q(phone__icontains=query)
+		)
+	status = request.GET.get('status', '')
+	if status in ('active', 'expired', 'pending'):
+		members = members.filter(subscriptions__status=status).distinct()
+	plan = request.GET.get('plan', '')
+	if plan in ('12', '36', '120'):
+		members = members.filter(subscriptions__sessions=plan).distinct()
+	return render(request, 'members/member_list.html', {
+		'members': members,
+		'query': query,
+		'status': status,
+		'plan': plan,
+	})
+
+
+@portal_user_required
+@require_http_methods(['GET', 'POST'])
+def member_create(request):
+	form = MemberForm(request.POST or None)
+	if request.method == 'POST' and form.is_valid():
+		member = form.save()
+		messages.success(request, 'عضو با موفقیت ثبت شد.')
+		return redirect('member_detail', pk=member.pk)
+	return render(request, 'members/member_form.html', {'form': form, 'is_create': True})
+
+
+@portal_user_required
+def member_detail(request, pk):
+	member = get_object_or_404(
+		Member.objects.select_related('gym_class', 'coach').prefetch_related(
+			'subscriptions__plan', 'attendances__gym_class', 'payments'
+		),
+		pk=pk,
+	)
+	return render(request, 'members/member_detail.html', {'member': member})
+
+
+@portal_user_required
+@require_http_methods(['GET', 'POST'])
+def member_update(request, pk):
+	member = get_object_or_404(Member, pk=pk)
+	form = MemberForm(request.POST or None, instance=member)
+	if request.method == 'POST' and form.is_valid():
+		form.save()
+		messages.success(request, 'اطلاعات عضو به‌روزرسانی شد.')
+		return redirect('member_detail', pk=member.pk)
+	return render(request, 'members/member_form.html', {
+		'form': form,
+		'member': member,
+		'is_create': False,
+	})
+
+
+@portal_user_required
+@require_http_methods(['GET', 'POST'])
+def member_delete(request, pk):
+	member = get_object_or_404(Member, pk=pk)
+	if request.method == 'POST':
+		member.delete()
+		messages.success(request, 'عضو حذف شد.')
+		return redirect('member_list')
+	return render(request, 'members/member_confirm_delete.html', {'member': member})

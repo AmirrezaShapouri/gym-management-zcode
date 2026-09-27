@@ -1,0 +1,573 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت باشگاه - سامانه جامع مدیریت باشگاه‌های ورزشی</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <style>
+        /* Hero Section Styles */
+        .hero-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            padding: 80px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(220, 53, 69, 0.1) 0%, transparent 50%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-title .highlight {
+            color: #dc3545;
+            position: relative;
+        }
+
+        .hero-title .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            right: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to left, #dc3545, transparent);
+            border-radius: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            line-height: 1.8;
+        }
+
+        .hero-buttons .btn {
+            padding: 12px 35px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .hero-buttons .btn-primary {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .hero-buttons .btn-primary:hover {
+            background-color: #b02a37;
+            border-color: #b02a37;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(220, 53, 69, 0.4);
+        }
+
+        .hero-buttons .btn-outline-light:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .hero-image {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-image img {
+            max-width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 80px 0;
+            background-color: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: #1a1a1a;
+        }
+
+        .section-title .highlight {
+            color: #dc3545;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+            border-color: rgba(220, 53, 69, 0.2);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            color: #dc3545;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            background: linear-gradient(135deg, #dc3545, #b02a37);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+        }
+
+        .feature-description {
+            color: #6c757d;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 60px 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #dc3545;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 80px 0;
+            background-color: white;
+        }
+
+        .cta-box {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 60px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .cta-box h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .cta-box p {
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 600px;
+            margin: 0 auto 30px;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.2rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .cta-box {
+                padding: 30px 20px;
+            }
+
+            .cta-box h2 {
+                font-size: 1.8rem;
+            }
+        }
+
+        .navbar-transparent {
+            background-color: rgba(26, 26, 26, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-transparent sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-dumbbell text-danger"></i>
+                مدیریت باشگاه
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#features">امکانات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">تماس</a>
+                    </li>
+                    <li class="nav-item ms-lg-2">
+                        <a href="{% url 'login' %}" class="btn btn-danger px-4">
+                            <i class="fas fa-sign-in-alt"></i> ورود
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section d-flex align-items-center">
+        <div class="container">
+            <div class="row align-items-center hero-content">
+                <div class="col-lg-6">
+                    <div class="hero-text">
+                        <h1 class="hero-title">
+                            مدیریت هوشمند
+                            <br>
+                            باشگاه ورزشی
+                            <br>
+                            <span class="highlight">با سامانه جامع</span>
+                        </h1>
+                        <p class="hero-subtitle">
+                            سامانه مدیریت باشگاه، ابزاری قدرتمند برای مدیریت اعضا، کلاس‌ها،
+                            حضور و غیاب، پرداخت‌ها و ارتباط با مشتریان. تمام آنچه برای
+                            اداره یک باشگاه حرفه‌ای نیاز دارید در یک پلتفرم یکپارچه.
+                        </p>
+                        <div class="hero-buttons d-flex flex-wrap gap-3">
+                            <a href="{% url 'login' %}" class="btn btn-primary">
+                                <i class="fas fa-arrow-left"></i> شروع کنید
+                            </a>
+                            <a href="#features" class="btn btn-outline-light">
+                                <i class="fas fa-info-circle"></i> مشاهده امکانات
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mt-5 mt-lg-0">
+                    <div class="hero-image text-center">
+                        <img src="https://via.placeholder.com/600x400/2d2d2d/dc3545?text=Gym+Management"
+                            alt="مدیریت باشگاه" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title">
+                    امکانات <span class="highlight">سامانه</span>
+                </h2>
+                <p class="text-muted" style="max-width: 600px; margin: 0 auto;">
+                    تمام ابزارهای مورد نیاز برای مدیریت حرفه‌ای باشگاه ورزشی شما در یک پلتفرم یکپارچه
+                </p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="feature-title">مدیریت اعضا</h3>
+                        <p class="feature-description">
+                            ثبت‌نام، مدیریت اطلاعات، پیگیری وضعیت اشتراک و تاریخچه حضور اعضای باشگاه
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h3 class="feature-title">مدیریت کلاس‌ها</h3>
+                        <p class="feature-description">
+                            ایجاد و مدیریت کلاس‌های ورزشی، تعیین ظرفیت، زمان‌بندی و ثبت نام اعضا
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h3 class="feature-title">حضور و غیاب</h3>
+                        <p class="feature-description">
+                            ثبت حضور و غیاب اعضا در کلاس‌ها با سه وضعیت حاضر، غایب و غیبت موجه
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h3 class="feature-title">مدیریت پرداخت‌ها</h3>
+                        <p class="feature-description">
+                            ثبت و پیگیری پرداخت‌ها، مدیریت اشتراک‌ها و مشاهده تاریخچه مالی اعضا
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h3 class="feature-title">سیستم پیامکی</h3>
+                        <p class="feature-description">
+                            ارسال پیامک‌های خودکار برای یادآوری کلاس، انقضای اشتراک و اطلاع‌رسانی
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="feature-title">گزارش‌گیری پیشرفته</h3>
+                        <p class="feature-description">
+                            داشبورد مدیریتی با آمار لحظه‌ای و گزارش‌های تحلیلی از عملکرد باشگاه
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="500">0</span>
+                        <span class="stat-label">عضویت فعال</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="50">0</span>
+                        <span class="stat-label">کلاس فعال</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="1200">0</span>
+                        <span class="stat-label">حضور ثبت شده</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="250">0</span>
+                        <span class="stat-label">باشگاه فعال</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" id="about">
+        <div class="container">
+            <div class="cta-box">
+                <h2>با ما در تماس باشید</h2>
+                <p>
+                    برای دریافت اطلاعات بیشتر درباره سامانه مدیریت باشگاه، نام و شماره تلفن خود را وارد کنید تا با شما
+                    تماس بگیریم.
+                </p>
+                <form id="contact" class="mx-auto text-end" style="max-width: 560px;" action="#" method="post">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="fullName" class="form-label">نام و نام خانوادگی</label>
+                            <input type="text" class="form-control" id="fullName" name="fullName"
+                                placeholder="نام و نام خانوادگی خود را وارد کنید" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phoneNumber" class="form-label">شماره تلفن</label>
+                            <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber"
+                                placeholder="۰۹۱۲۳۴۵۶۷۸۹" dir="ltr" required>
+                        </div>
+                        <div class="col-12 text-center">
+                            <button type="submit" class="btn btn-danger btn-lg px-5">
+                                <i class="fas fa-paper-plane"></i> ارسال درخواست تماس
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-danger fw-bold">
+                        <i class="fas fa-dumbbell"></i> مدیریت باشگاه
+                    </h5>
+                    <p class="text-white-50 small">
+                        سامانه جامع مدیریت باشگاه‌های ورزشی
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-white-50 small">
+                        © ۱۴۰۳ مدیریت باشگاه - تمام حقوق محفوظ است
+                    </p>
+                    <p class="text-white-50 small">نسخه 1.0.0</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        // شمارنده انیمیشن برای بخش آمار
+        document.addEventListener('DOMContentLoaded', function () {
+            const statNumbers = document.querySelectorAll('.stat-number');
+
+            const animateCounter = (element) => {
+                const target = parseInt(element.getAttribute('data-count'));
+                let current = 0;
+                const increment = target / 50;
+                const duration = 2000;
+                const stepTime = duration / 50;
+
+                const updateCounter = () => {
+                    current += increment;
+                    if (current < target) {
+                        element.textContent = Math.round(current).toLocaleString('fa-IR');
+                        setTimeout(updateCounter, stepTime);
+                    } else {
+                        element.textContent = target.toLocaleString('fa-IR');
+                    }
+                };
+
+                updateCounter();
+            };
+
+            // Intersection Observer برای شروع انیمیشن
+            const observerOptions = {
+                threshold: 0.5,
+                rootMargin: '0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const number = entry.target;
+                        animateCounter(number);
+                        observer.unobserve(number);
+                    }
+                });
+            }, observerOptions);
+
+            statNumbers.forEach(number => {
+                observer.observe(number);
+            });
+        });
+    </script>
+</body>
+
+</html>

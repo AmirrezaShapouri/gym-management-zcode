@@ -1,0 +1,209 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لیست پرداخت‌ها - مدیریت باشگاه</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}"><i class="fas fa-dumbbell"></i> مدیریت باشگاه</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3"><i class="fas fa-user"></i> مدیر سیستم</span>
+                <button class="navbar-toggler d-md-none" type="button" aria-label="باز و بسته کردن منو">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'dashboard' %}"><i
+                                    class="fas fa-tachometer-alt"></i> داشبورد</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'member_list' %}"><i
+                                    class="fas fa-users"></i> اعضا</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'class_list' %}"><i
+                                    class="fas fa-chalkboard-teacher"></i> کلاس‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance' %}"><i
+                                    class="fas fa-clipboard-check"></i> حضور و غیاب</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance_history' %}"><i class="fas fa-history"></i> تاریخچه حضور</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'subscription_list' %}"><i
+                                    class="fas fa-ticket-alt"></i> اشتراک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white active" href="{% url 'payment_list' %}"><i
+                                    class="fas fa-credit-card"></i> پرداخت‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'finance_dashboard' %}"><i
+                                    class="fas fa-chart-line"></i> امور مالی</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'expense_list' %}"><i
+                                    class="fas fa-receipt"></i> هزینه‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white"
+                                href="{% url 'notification_list' %}"><i class="fas fa-bell"></i> پیامک‌ها</a>
+                        </li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'gym_settings' %}"><i
+                                    class="fas fa-cog"></i> تنظیمات باشگاه</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'profile' %}"><i
+                                    class="fas fa-user-circle"></i> پروفایل</a></li>
+                        <li class="nav-item"><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link text-danger border-0 bg-transparent"><i
+                                    class="fas fa-sign-out-alt"></i> خروج</button></form></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom gap-2">
+                    <div>
+                        <h1 class="h2 mb-1">مدیریت پرداخت‌ها</h1>
+                        <p class="text-muted mb-0">ثبت دستی و پیگیری پرداخت اعضا</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary btn-sm"><i
+                                class="fas fa-receipt ms-1"></i> مدیریت هزینه‌ها</a>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#paymentModal"><i class="fas fa-plus ms-1"></i> ثبت پرداخت دستی</button>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card finance-card finance-card-income h-100">
+                            <div class="card-body"><span class="finance-icon bg-success-subtle text-success"><i
+                                        class="fas fa-check"></i></span>
+                                <p class="text-muted mb-1 mt-3">پرداخت موفق</p>
+                                <h2 class="h4 mb-0">{{ success_count }} <small>تراکنش</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card finance-card finance-card-pending h-100">
+                            <div class="card-body"><span class="finance-icon bg-warning-subtle text-warning"><i
+                                        class="fas fa-clock"></i></span>
+                                <p class="text-muted mb-1 mt-3">در انتظار بررسی</p>
+                                <h2 class="h4 mb-0">{{ pending_count }} <small>تراکنش</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card finance-card finance-card-expense h-100">
+                            <div class="card-body"><span class="finance-icon bg-danger-subtle text-danger"><i
+                                        class="fas fa-times"></i></span>
+                                <p class="text-muted mb-1 mt-3">ناموفق</p>
+                                <h2 class="h4 mb-0">{{ failed_count }} <small>تراکنش</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card finance-card finance-card-profit h-100">
+                            <div class="card-body"><span class="finance-icon bg-primary-subtle text-primary"><i
+                                        class="fas fa-coins"></i></span>
+                                <p class="text-muted mb-1 mt-3">دریافت این ماه</p>
+                                <h2 class="h4 mb-0">{{ monthly_income }} <small>تومان</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form method="get" class="row g-2 mb-3">
+                            <div class="col-md-5"><label class="form-label visually-hidden" for="paymentSearch">جستجوی
+                                    عضو یا تراکنش</label><input id="paymentSearch" class="form-control" type="search"
+                                    name="q" value="{{ query }}" placeholder="جستجوی عضو یا شماره تراکنش"></div>
+                            <div class="col-md-3"><label class="form-label visually-hidden"
+                                    for="paymentStatusFilter">فیلتر وضعیت</label><select id="paymentStatusFilter"
+                                    class="form-select">
+                                    <option value="">همه وضعیت‌ها</option>
+                                    <option value="موفق" {% if status == 'موفق' %}selected{% endif %}>موفق</option>
+                                    <option value="در انتظار" {% if status == 'در انتظار' %}selected{% endif %}>در انتظار</option>
+                                    <option value="ناموفق" {% if status == 'ناموفق' %}selected{% endif %}>ناموفق</option>
+                                </select></div>
+                            <div class="col-md-4 text-md-start"><button class="btn btn-outline-secondary">فیلتر</button></div>
+                        </form>
+                        <div class="table-responsive">
+                            <table id="paymentTable" class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>عضو</th>
+                                        <th>مبلغ</th>
+                                        <th>نوع اشتراک</th>
+                                        <th>تاریخ</th>
+                                        <th>وضعیت</th>
+                                        <th>شماره تراکنش</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                    <tr>
+                                        <td><a href="{% url 'payment_detail' payment.pk %}">{{ payment.member.full_name }}</a></td>
+                                        <td>{{ payment.amount }}</td>
+                                        <td>{{ payment.plan_label|default:'-' }}</td>
+                                        <td>{{ payment.date|date:'Y/m/d' }}</td>
+                                        <td>{{ payment.get_status_display }}</td>
+                                        <td>{{ payment.reference }}</td>
+                                        <td><form method="post" action="{% url 'payment_delete' payment.pk %}">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="حذف"><i class="fas fa-trash"></i></button></form></td>
+                                    </tr>
+                                    {% empty %}<tr><td colspan="7" class="text-center text-muted">پرداختی ثبت نشده است.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item disabled"><a class="page-link" href="#">قبلی</a></li>
+                                <li class="page-item active"><a class="page-link" href="#">۱</a></li>
+                                <li class="page-item"><a class="page-link" href="#">بعدی</a></li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="paymentModalLabel">ثبت پرداخت دستی</h5><button type="button"
+                                    class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="بستن"></button>
+                            </div>
+                            <form id="manualPaymentForm" method="post">
+                                {% csrf_token %}{{ form.non_field_errors }}
+                                <div class="modal-body">{% for field in form %}<div class="mb-3">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}</div>
+                                <div class="modal-footer"><button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">انصراف</button><button type="submit"
+                                        class="btn btn-primary"><i class="fas fa-save ms-1"></i> ثبت پرداخت</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="footer mt-auto py-3 bg-light">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-6 text-md-end"><span class="text-muted">© ۱۴۰۳ مدیریت باشگاه - تمام حقوق
+                                    محفوظ است</span></div>
+                            <div class="col-md-6 text-md-start"><span class="text-muted">نسخه 1.0.0</span></div>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

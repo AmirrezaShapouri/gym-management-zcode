@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>افزودن/ویرایش کلاس - مدیریت باشگاه</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}"><i class="fas fa-dumbbell"></i> مدیریت باشگاه</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3"><i class="fas fa-user"></i> مدیر سیستم</span>
+                <button class="navbar-toggler d-md-none" type="button" aria-label="باز و بسته کردن منو">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'dashboard' %}"><i
+                                    class="fas fa-tachometer-alt"></i> داشبورد</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'member_list' %}"><i
+                                    class="fas fa-users"></i> اعضا</a></li>
+                        <li class="nav-item"><a class="nav-link text-white active" href="{% url 'class_list' %}"><i
+                                    class="fas fa-chalkboard-teacher"></i> کلاس‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance' %}"><i
+                                    class="fas fa-clipboard-check"></i> حضور و غیاب</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'attendance_history' %}"><i class="fas fa-history"></i> تاریخچه حضور</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'subscription_list' %}"><i
+                                    class="fas fa-ticket-alt"></i> اشتراک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'payment_list' %}"><i
+                                    class="fas fa-credit-card"></i> پرداخت‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'finance_dashboard' %}"><i
+                                    class="fas fa-chart-line"></i> امور مالی</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'expense_list' %}"><i
+                                    class="fas fa-receipt"></i> هزینه‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link text-white"
+                                href="{% url 'notification_list' %}"><i class="fas fa-bell"></i> پیامک‌ها</a>
+                        </li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'gym_settings' %}"><i
+                                    class="fas fa-cog"></i> تنظیمات باشگاه</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="{% url 'profile' %}"><i
+                                    class="fas fa-user-circle"></i> پروفایل</a></li>
+                        <li class="nav-item"><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link text-danger border-0 bg-transparent"><i
+                                    class="fas fa-sign-out-alt"></i> خروج</button></form></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">{% if is_create %}ایجاد کلاس جدید{% else %}ویرایش کلاس{% endif %}</h1>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form.non_field_errors }}{{ plans.non_form_errors }}
+                            <div class="row g-3 mb-4">
+                                {% for field in form %}<div class="col-md-6"><label class="form-label">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+                            </div>
+                            {{ plans.management_form }}
+                            <h5>پلن‌ها و قیمت‌ها</h5>
+                            {% for plan_form in plans %}<div class="row g-3 mb-3">{{ plan_form.id }}{% for field in plan_form.visible_fields %}<div class="col-md-4"><label class="form-label">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div>{% endfor %}
+                            <div class="row g-3" hidden>
+                                <div class="col-md-6">
+                                    <label for="className" class="form-label">نام کلاس</label>
+                                    <input type="text" class="form-control" id="className"
+                                        placeholder="نام کلاس را وارد کنید">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="classCoach" class="form-label">مربی</label>
+                                    <select class="form-select" id="classCoach">
+                                        <option>مهدی نادری</option>
+                                        <option>لیلا احمدی</option>
+                                        <option>امیر توکلی</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="classDays" class="form-label">روزهای برگزاری</label>
+                                    <select class="form-select" id="classDays" multiple>
+                                        <option>شنبه</option>
+                                        <option>یکشنبه</option>
+                                        <option>دوشنبه</option>
+                                        <option>سه‌شنبه</option>
+                                        <option>چهارشنبه</option>
+                                        <option>پنج‌شنبه</option>
+                                        <option>جمعه</option>
+                                    </select>
+                                    <small class="text-muted">کلید Ctrl را نگه دارید تا چند گزینه انتخاب کنید</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="classStartTime" class="form-label">ساعت شروع</label>
+                                    <input type="time" class="form-control" id="classStartTime">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="classEndTime" class="form-label">ساعت پایان</label>
+                                    <input type="time" class="form-control" id="classEndTime">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="classCapacity" class="form-label">ظرفیت</label>
+                                    <input type="number" class="form-control" id="classCapacity"
+                                        placeholder="تعداد ظرفیت">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="classStatus" class="form-label">وضعیت</label>
+                                    <select class="form-select" id="classStatus">
+                                        <option>فعال</option>
+                                        <option>غیرفعال</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">پلن‌های قابل ارائه و قیمت هر پلن</label>
+                                    <div class="class-plan-selection">
+                                        <label class="class-plan-option"><input type="checkbox" checked> <span>۱۲
+                                                جلسه</span><input type="number" class="form-control form-control-sm"
+                                                value="2500000" min="0" aria-label="قیمت پلن ۱۲ جلسه‌ای"></label>
+                                        <label class="class-plan-option"><input type="checkbox" checked> <span>۳۶
+                                                جلسه</span><input type="number" class="form-control form-control-sm"
+                                                value="6000000" min="0" aria-label="قیمت پلن ۳۶ جلسه‌ای"></label>
+                                        <label class="class-plan-option"><input type="checkbox"> <span>۱۲۰
+                                                جلسه</span><input type="number" class="form-control form-control-sm"
+                                                value="25000000" min="0" aria-label="قیمت پلن ۱۲۰ جلسه‌ای"></label>
+                                    </div>
+                                    <small class="text-muted">می‌توانید چند پلن را برای یک کلاس فعال کنید.</small>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="classDescription" class="form-label">توضیحات</label>
+                                    <textarea class="form-control" id="classDescription" rows="3"
+                                        placeholder="توضیحات کلاس"></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> ذخیره</button>
+                                <a href="{% url 'class_list' %}" class="btn btn-secondary">انصراف</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <footer class="footer mt-auto py-3 bg-light">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-6 text-md-end"><span class="text-muted">© ۱۴۰۳ مدیریت باشگاه - تمام حقوق
+                                    محفوظ است</span></div>
+                            <div class="col-md-6 text-md-start"><span class="text-muted">نسخه 1.0.0</span></div>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>
