@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import GymSettings, GymSubscription
+from .models import GymSettings, GymSubscription, GymSubscriptionRequest
 
 
 class GymSettingsForm(forms.ModelForm):
@@ -18,8 +18,13 @@ class GymSettingsForm(forms.ModelForm):
 
 
 class GymSubscriptionRequestForm(forms.ModelForm):
+    def __init__(self, *args, gym, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.gym = gym
+        self.fields['invoice_image'].required = True
+
     class Meta:
-        model = GymSubscription
+        model = GymSubscriptionRequest
         fields = ('sessions', 'invoice_image')
         widgets = {
             'sessions': forms.Select(attrs={'class': 'form-select'}),
@@ -29,16 +34,10 @@ class GymSubscriptionRequestForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['invoice_image'].required = True
-
     def save(self, commit=True):
         subscription = super().save(commit=False)
         subscription.price = GymSubscription.PLAN_PRICES[subscription.sessions]
-        subscription.status = GymSubscription.STATUS_PENDING
-        subscription.start_date = None
-        subscription.end_date = None
+        subscription.gym = self.gym
         if commit:
             subscription.save()
         return subscription

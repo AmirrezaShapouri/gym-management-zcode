@@ -21,6 +21,25 @@ def is_manager(user):
     return user_role(user) == 'manager'
 
 
+def user_gym(user):
+    profile = getattr(user, 'profile', None)
+    gym = getattr(profile, 'gym', None)
+    if not gym or not gym.is_active:
+        raise PermissionDenied('این حساب به باشگاه فعالی متصل نیست.')
+    return gym
+
+
+def tenant_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        request.gym = user_gym(request.user)
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
 def role_required(*roles):
     def decorator(view_func):
         @wraps(view_func)
@@ -39,15 +58,18 @@ def role_required(*roles):
 def coach_class_ids(user):
     profile = getattr(user, 'profile', None)
     phone = getattr(profile, 'phone', '').strip()
-    if not phone:
+    gym_id = getattr(profile, 'gym_id', None)
+    if not phone or not gym_id:
         return []
 
     from classes.models import Coach, GymClass
 
-    coaches = Coach.objects.filter(phone=phone)
+    coaches = Coach.objects.filter(phone=phone, gym_id=gym_id)
     if coaches.count() != 1:
         return []
-    return GymClass.objects.filter(coach_id=coaches.values_list('pk', flat=True)[0]).values_list(
+    return GymClass.objects.filter(
+        gym_id=gym_id, coach_id=coaches.values_list('pk', flat=True)[0]
+    ).values_list(
         'pk', flat=True
     )
 

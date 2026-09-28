@@ -5,15 +5,16 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from core.mixins import role_required
+from core.mixins import role_required, tenant_required
 from members.models import Subscription
 from .forms import ExpenseForm, PaymentForm, SubscriptionForm
 from .models import Expense, Payment
 
 
+@tenant_required
 @role_required('manager', 'reception')
 def payment_list(request):
-	payments = Payment.objects.select_related('member', 'subscription').all()
+	payments = Payment.objects.select_related('member', 'subscription').filter(member__gym=request.gym)
 	query = request.GET.get('q', '').strip()
 	status = request.GET.get('status', '')
 	if query:
@@ -26,7 +27,7 @@ def payment_list(request):
 		payments = payments.filter(status=status)
 	filtered_payments = payments
 	page_obj = Paginator(payments, 25).get_page(request.GET.get('page'))
-	form = PaymentForm(request.POST or None)
+	form = PaymentForm(request.POST or None, gym=request.gym)
 	if request.method == 'POST' and form.is_valid():
 		payment = form.save(commit=False)
 		payment.operator = request.user.get_username()
@@ -34,7 +35,9 @@ def payment_list(request):
 		messages.success(request, 'پرداخت ثبت شد.')
 		return redirect('payment_list')
 	today = timezone.localdate()
-	monthly = Payment.objects.filter(date__year=today.year, date__month=today.month)
+	monthly = Payment.objects.filter(
+		member__gym=request.gym, date__year=today.year, date__month=today.month
+	)
 	return render(request, 'payments/payment_list.html', {
 		'payments': page_obj,
 		'page_obj': page_obj,
@@ -48,26 +51,31 @@ def payment_list(request):
 	})
 
 
+@tenant_required
 @role_required('manager', 'reception')
 def payment_detail(request, pk):
 	payment = get_object_or_404(
-		Payment.objects.select_related('member', 'subscription__plan'),
+		Payment.objects.filter(member__gym=request.gym).select_related('member', 'subscription__plan'),
 		pk=pk,
 	)
 	return render(request, 'payments/payment_detail.html', {'payment': payment})
 
 
+@tenant_required
 @role_required('manager')
 @require_POST
 def payment_delete(request, pk):
-	get_object_or_404(Payment, pk=pk).delete()
+	get_object_or_404(Payment, pk=pk, member__gym=request.gym).delete()
 	messages.success(request, 'پرداخت حذف شد.')
 	return redirect('payment_list')
 
 
+@tenant_required
 @role_required('manager')
 def subscription_list(request):
-	subscriptions = Subscription.objects.select_related('member', 'plan__gym_class').all()
+	subscriptions = Subscription.objects.filter(member__gym=request.gym).select_related(
+		'member', 'plan__gym_class'
+	)
 	page_obj = Paginator(subscriptions, 25).get_page(request.GET.get('page'))
 	return render(request, 'payments/subscription_list.html', {
 		'subscriptions': page_obj,
@@ -75,19 +83,23 @@ def subscription_list(request):
 	})
 
 
+@tenant_required
 @role_required('manager')
 def subscription_detail(request, pk):
 	subscription = get_object_or_404(
-		Subscription.objects.select_related('member', 'plan__gym_class').prefetch_related('payments'),
+		Subscription.objects.filter(member__gym=request.gym).select_related(
+			'member', 'plan__gym_class'
+		).prefetch_related('payments'),
 		pk=pk,
 	)
 	return render(request, 'payments/subscription_detail.html', {'subscription': subscription})
 
 
+@tenant_required
 @role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def subscription_create(request):
-	form = SubscriptionForm(request.POST or None)
+	form = SubscriptionForm(request.POST or None, gym=request.gym)
 	if request.method == 'POST' and form.is_valid():
 		subscription = form.save()
 		messages.success(request, 'اشتراک ثبت شد.')
@@ -95,10 +107,11 @@ def subscription_create(request):
 	return render(request, 'payments/subscription_form.html', {'form': form})
 
 
+@tenant_required
 @role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def expense_list(request):
-	expenses = Expense.objects.all()
+	expenses = Expense.objects.filter(gym=request.gym)
 	query = request.GET.get('q', '').strip()
 	category = request.GET.get('category', '')
 	if query:
@@ -106,7 +119,7 @@ def expense_list(request):
 	if category in dict(Expense.CATEGORY_CHOICES):
 		expenses = expenses.filter(category=category)
 	page_obj = Paginator(expenses, 25).get_page(request.GET.get('page'))
-	form = ExpenseForm(request.POST or None)
+	form = ExpenseForm(request.POST or None, gym=request.gym)
 	if request.method == 'POST' and form.is_valid():
 		expense = form.save(commit=False)
 		expense.operator = request.user.get_username()
@@ -114,7 +127,9 @@ def expense_list(request):
 		messages.success(request, 'هزینه ثبت شد.')
 		return redirect('expense_list')
 	today = timezone.localdate()
-	month_expenses = Expense.objects.filter(date__year=today.year, date__month=today.month)
+	month_expenses = Expense.objects.filter(
+		gym=request.gym, date__year=today.year, date__month=today.month
+	)
 	return render(request, 'payments/expense_list.html', {
 		'expenses': page_obj,
 		'page_obj': page_obj,
@@ -127,20 +142,22 @@ def expense_list(request):
 	})
 
 
+@tenant_required
 @role_required('manager')
 @require_POST
 def expense_delete(request, pk):
-	get_object_or_404(Expense, pk=pk).delete()
+	get_object_or_404(Expense, pk=pk, gym=request.gym).delete()
 	messages.success(request, 'هزینه حذف شد.')
 	return redirect('expense_list')
 
 
+@tenant_required
 @role_required('manager')
 def finance_dashboard(request):
 	today = timezone.localdate()
 	month_start = today.replace(day=1)
-	payments = Payment.objects.filter(date__gte=month_start, date__lte=today)
-	expenses = Expense.objects.filter(date__gte=month_start, date__lte=today)
+	payments = Payment.objects.filter(member__gym=request.gym, date__gte=month_start, date__lte=today)
+	expenses = Expense.objects.filter(gym=request.gym, date__gte=month_start, date__lte=today)
 	income = payments.filter(status=Payment.STATUS_SUCCESS).aggregate(total=Sum('amount'))['total'] or 0
 	expense_total = expenses.filter(status=Expense.STATUS_PAID).aggregate(total=Sum('amount'))['total'] or 0
 	return render(request, 'payments/finance_dashboard.html', {
@@ -148,5 +165,5 @@ def finance_dashboard(request):
 		'expenses': expense_total,
 		'profit': income - expense_total,
 		'pending_payments': payments.filter(status=Payment.STATUS_PENDING).aggregate(total=Sum('amount'))['total'] or 0,
-		'payments': Payment.objects.select_related('member').all()[:10],
+		'payments': Payment.objects.select_related('member').filter(member__gym=request.gym)[:10],
 	})

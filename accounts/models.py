@@ -16,6 +16,8 @@ class Profile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile',
                                 verbose_name='کاربر')
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.PROTECT, null=True, blank=True,
+                            related_name='profiles', verbose_name='باشگاه')
     role = models.CharField('نقش', max_length=20, choices=ROLE_CHOICES, default=ROLE_RECEPTION)
     phone = models.CharField('شماره همراه', max_length=20, blank=True)
 

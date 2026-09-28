@@ -5,14 +5,15 @@ from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
-from core.mixins import role_required
+from core.mixins import role_required, tenant_required
 from .forms import MemberForm
 from .models import Member
 
 
+@tenant_required
 @role_required('manager', 'reception')
 def member_list(request):
-	members = Member.objects.select_related('gym_class', 'coach').prefetch_related(
+	members = Member.objects.filter(gym=request.gym).select_related('gym_class', 'coach').prefetch_related(
 		'subscriptions__plan'
 	).order_by('last_name', 'first_name', 'pk')
 	query = request.GET.get('q', '').strip()
@@ -38,10 +39,11 @@ def member_list(request):
 	})
 
 
+@tenant_required
 @role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def member_create(request):
-	form = MemberForm(request.POST or None)
+	form = MemberForm(request.POST or None, gym=request.gym)
 	if request.method == 'POST' and form.is_valid():
 		member = form.save()
 		messages.success(request, 'عضو با موفقیت ثبت شد.')
@@ -49,10 +51,11 @@ def member_create(request):
 	return render(request, 'members/member_form.html', {'form': form, 'is_create': True})
 
 
+@tenant_required
 @role_required('manager', 'reception')
 def member_detail(request, pk):
 	member = get_object_or_404(
-		Member.objects.select_related('gym_class', 'coach').prefetch_related(
+		Member.objects.filter(gym=request.gym).select_related('gym_class', 'coach').prefetch_related(
 			'subscriptions__plan', 'attendances__gym_class', 'payments'
 		),
 		pk=pk,
@@ -60,11 +63,12 @@ def member_detail(request, pk):
 	return render(request, 'members/member_detail.html', {'member': member})
 
 
+@tenant_required
 @role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def member_update(request, pk):
-	member = get_object_or_404(Member, pk=pk)
-	form = MemberForm(request.POST or None, instance=member)
+	member = get_object_or_404(Member, pk=pk, gym=request.gym)
+	form = MemberForm(request.POST or None, instance=member, gym=request.gym)
 	if request.method == 'POST' and form.is_valid():
 		form.save()
 		messages.success(request, 'اطلاعات عضو به‌روزرسانی شد.')
@@ -76,10 +80,11 @@ def member_update(request, pk):
 	})
 
 
+@tenant_required
 @role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def member_delete(request, pk):
-	member = get_object_or_404(Member, pk=pk)
+	member = get_object_or_404(Member, pk=pk, gym=request.gym)
 	if request.method == 'POST':
 		try:
 			member.delete()

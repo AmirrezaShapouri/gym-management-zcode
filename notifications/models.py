@@ -3,6 +3,8 @@ from django.core.exceptions import ValidationError
 
 
 class SMSMessage(models.Model):
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='sms_messages', verbose_name='باشگاه')
     TYPE_CLASS_REMINDER = 'یادآوری کلاس'
     TYPE_SUBSCRIPTION_EXPIRY = 'انقضای اشتراک'
     TYPE_PAYMENT = 'پرداخت'
@@ -43,6 +45,8 @@ class SMSMessage(models.Model):
 
 
 class Announcement(models.Model):
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='announcements', verbose_name='باشگاه')
     message_type = models.CharField('نوع پیام', max_length=120)
     body = models.TextField('متن اعلانیه')
     classes = models.ManyToManyField('classes.GymClass', related_name='announcements',
@@ -77,6 +81,8 @@ class MemberNotificationSetting(models.Model):
 
 
 class SMSSettings(models.Model):
+    gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+                               related_name='sms_settings', verbose_name='باشگاه')
     """تنظیمات سراسری پیامک (تک‌نمونه‌ای)."""
     enabled = models.BooleanField('فعال‌سازی ارسال پیامک', default=True)
     expiry_sms = models.BooleanField('پیامک انقضای اشتراک', default=True)
@@ -91,12 +97,6 @@ class SMSSettings(models.Model):
     def __str__(self):
         return 'تنظیمات پیامک'
 
-    def save(self, *args, **kwargs):
-        if self.pk not in (None, 1):
-            raise ValidationError('فقط یک رکورد تنظیمات پیامک مجاز است.')
-        self.pk = 1
-        super().save(*args, **kwargs)
-
     @classmethod
-    def load(cls):
-        return cls.objects.get_or_create(pk=1)[0]
+    def load(cls, gym):
+        return cls.objects.get_or_create(gym=gym)[0]

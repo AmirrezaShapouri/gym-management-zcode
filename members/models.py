@@ -9,6 +9,8 @@ from core.fields import JalaliDateField
 
 
 class Member(models.Model):
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='members', verbose_name='باشگاه')
     first_name = models.CharField('نام', max_length=80)
     last_name = models.CharField('نام خانوادگی', max_length=80)
     phone = models.CharField('شماره موبایل', max_length=20)
@@ -26,6 +28,20 @@ class Member(models.Model):
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'.strip()
+
+    def clean(self):
+        for related in (self.gym_class, self.coach):
+            if related and self.gym_id and related.gym_id != self.gym_id:
+                raise ValidationError('کلاس و مربی باید متعلق به همین باشگاه باشند.')
+
+    def save(self, *args, **kwargs):
+        related_gym_ids = {
+            related.gym_id for related in (self.gym_class, self.coach) if related is not None
+        }
+        if not self.gym_id and len(related_gym_ids) == 1:
+            self.gym_id = related_gym_ids.pop()
+        self.clean()
+        super().save(*args, **kwargs)
 
     @property
     def full_name(self):
@@ -104,6 +120,8 @@ class Subscription(models.Model):
             self.member.gym_class_id != self.plan.gym_class_id
         ):
             raise ValidationError({'plan': 'پلن باید متعلق به کلاس عضو باشد.'})
+        if self.member_id and self.plan_id and self.member.gym_id != self.plan.gym_class.gym_id:
+            raise ValidationError({'plan': 'پلن باید متعلق به باشگاه عضو باشد.'})
         if self.remaining_sessions < 0:
             raise ValidationError({'remaining_sessions': 'جلسات باقی‌مانده نمی‌تواند منفی باشد.'})
         if self.remaining_sessions > self.sessions:

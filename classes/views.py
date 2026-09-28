@@ -5,14 +5,15 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from core.mixins import coach_class_ids, role_required, user_role
+from core.mixins import coach_class_ids, role_required, tenant_required, user_role
 from .forms import ClassPlanFormSet, GymClassForm
 from .models import GymClass
 
 
+@tenant_required
 @role_required('manager', 'reception', 'coach')
 def class_list(request):
-	classes = GymClass.objects.select_related('coach').prefetch_related('plans').annotate(
+	classes = GymClass.objects.filter(gym=request.gym).select_related('coach').prefetch_related('plans').annotate(
 		_member_count=Count('members')
 	)
 	if user_role(request.user) == 'coach':
@@ -27,10 +28,11 @@ def class_list(request):
 	})
 
 
+@tenant_required
 @role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def class_create(request):
-	form = GymClassForm(request.POST or None)
+	form = GymClassForm(request.POST or None, gym=request.gym)
 	plans = ClassPlanFormSet(request.POST or None)
 	if request.method == 'POST' and form.is_valid() and plans.is_valid():
 		with transaction.atomic():
@@ -46,9 +48,10 @@ def class_create(request):
 	})
 
 
+@tenant_required
 @role_required('manager', 'reception', 'coach')
 def class_detail(request, pk):
-	classes = GymClass.objects.select_related('coach').prefetch_related(
+	classes = GymClass.objects.filter(gym=request.gym).select_related('coach').prefetch_related(
 		'plans', 'members__subscriptions__plan', 'attendances__member'
 	)
 	if user_role(request.user) == 'coach':
@@ -60,11 +63,12 @@ def class_detail(request, pk):
 	return render(request, 'classes/class_detail.html', {'gym_class': gym_class})
 
 
+@tenant_required
 @role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def class_update(request, pk):
-	gym_class = get_object_or_404(GymClass, pk=pk)
-	form = GymClassForm(request.POST or None, instance=gym_class)
+	gym_class = get_object_or_404(GymClass, pk=pk, gym=request.gym)
+	form = GymClassForm(request.POST or None, instance=gym_class, gym=request.gym)
 	plans = ClassPlanFormSet(request.POST or None, instance=gym_class)
 	if request.method == 'POST' and form.is_valid() and plans.is_valid():
 		with transaction.atomic():
@@ -81,10 +85,11 @@ def class_update(request, pk):
 	})
 
 
+@tenant_required
 @role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def class_delete(request, pk):
-	gym_class = get_object_or_404(GymClass, pk=pk)
+	gym_class = get_object_or_404(GymClass, pk=pk, gym=request.gym)
 	if request.method == 'POST':
 		try:
 			gym_class.delete()

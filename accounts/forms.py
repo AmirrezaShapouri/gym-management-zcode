@@ -54,6 +54,10 @@ class StaffUserForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, gym, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.gym = gym
+
     def clean_password(self):
         password = self.cleaned_data['password']
         password_validation.validate_password(password)
@@ -66,5 +70,6 @@ class StaffUserForm(forms.ModelForm):
             user.save()
             user.profile.role = self.cleaned_data['role']
             user.profile.phone = self.cleaned_data['phone']
-            user.profile.save(update_fields=['role', 'phone'])
+            user.profile.gym = self.gym
+            user.profile.save(update_fields=['role', 'phone', 'gym'])
         return user

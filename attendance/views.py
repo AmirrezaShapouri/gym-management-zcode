@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from core.mixins import coach_class_ids, role_required, user_role
+from core.mixins import coach_class_ids, role_required, tenant_required, user_role
 from classes.models import GymClass
 from members.models import Member
 from .models import Attendance
@@ -24,20 +24,22 @@ class AttendanceSelectionForm(forms.Form):
 		widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
 	)
 
-	def __init__(self, *args, class_ids=None, **kwargs):
+	def __init__(self, *args, gym, class_ids=None, **kwargs):
 		super().__init__(*args, **kwargs)
-		classes = GymClass.objects.filter(is_active=True)
+		classes = GymClass.objects.filter(gym=gym, is_active=True)
 		if class_ids is not None:
 			classes = classes.filter(pk__in=class_ids)
 		self.fields['gym_class'].queryset = classes.order_by('name')
 		self.fields['date'].input_formats = ['%Y-%m-%d']
 
 
+@tenant_required
 @role_required('manager', 'reception', 'coach')
 @require_http_methods(['GET', 'POST'])
 def attendance(request):
 	class_ids = coach_class_ids(request.user) if user_role(request.user) == 'coach' else None
-	form = AttendanceSelectionForm(request.POST or request.GET or None, class_ids=class_ids, initial={
+	form = AttendanceSelectionForm(request.POST or request.GET or None, gym=request.gym,
+		class_ids=class_ids, initial={
 		'date': timezone.localdate(),
 	})
 	members = Member.objects.none()
@@ -45,7 +47,7 @@ def attendance(request):
 	if request.method == 'POST' and form.is_valid():
 		gym_class = form.cleaned_data['gym_class']
 		attendance_date = form.cleaned_data['date']
-		members = Member.objects.filter(gym_class=gym_class).select_related('coach').prefetch_related(
+		members = Member.objects.filter(gym=request.gym, gym_class=gym_class).select_related('coach').prefetch_related(
 			'subscriptions__plan'
 		).order_by('last_name', 'first_name')
 		valid_statuses = {value for value, _ in Attendance.STATUS_CHOICES}
@@ -72,7 +74,7 @@ def attendance(request):
 	elif request.method == 'GET' and form.is_valid():
 		gym_class = form.cleaned_data['gym_class']
 		attendance_date = form.cleaned_data['date']
-		members = Member.objects.filter(gym_class=gym_class).select_related('coach').prefetch_related(
+		members = Member.objects.filter(gym=request.gym, gym_class=gym_class).select_related('coach').prefetch_related(
 			'subscriptions__plan'
 		).order_by('last_name', 'first_name')
 		existing = {
@@ -90,9 +92,12 @@ def attendance(request):
 	})
 
 
+@tenant_required
 @role_required('manager', 'reception', 'coach')
 def attendance_history(request):
-	records = Attendance.objects.select_related('member', 'gym_class').prefetch_related(
+	records = Attendance.objects.filter(gym_class__gym=request.gym).select_related(
+		'member', 'gym_class'
+	).prefetch_related(
 		'member__subscriptions__plan'
 	)
 	if user_role(request.user) == 'coach':

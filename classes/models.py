@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -5,6 +6,8 @@ from core import jalali
 
 
 class Coach(models.Model):
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='coaches', verbose_name='باشگاه')
     full_name = models.CharField('نام و نام خانوادگی', max_length=120)
     phone = models.CharField('شماره موبایل', max_length=20, blank=True)
 
@@ -17,6 +20,8 @@ class Coach(models.Model):
 
 
 class GymClass(models.Model):
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='classes', verbose_name='باشگاه')
     WEEKDAY_CHOICES = [(key, label) for key, label in jalali.WEEKDAY_KEYS]
 
     name = models.CharField('نام کلاس', max_length=120)
@@ -36,6 +41,16 @@ class GymClass(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        if self.gym_id and self.coach_id and self.coach.gym_id != self.gym_id:
+            raise ValidationError({'coach': 'مربی باید متعلق به همین باشگاه باشد.'})
+
+    def save(self, *args, **kwargs):
+        if not self.gym_id and self.coach_id:
+            self.gym_id = self.coach.gym_id
+        self.clean()
+        super().save(*args, **kwargs)
 
     @property
     def days_list(self):

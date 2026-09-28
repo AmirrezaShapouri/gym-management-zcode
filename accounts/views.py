@@ -8,11 +8,12 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods, require_POST
 
-from core.mixins import portal_user_required, user_role
+from core.mixins import portal_user_required, tenant_required, user_role
 from gyms.forms import GymSubscriptionRequestForm
+from gyms.models import GymSettings, GymSubscription, GymSubscriptionRequest
+from notifications.models import SMSSettings
 from .forms import ProfileForm, StaffUserForm
 from .models import Profile
-from gyms.models import GymSubscription
 
 
 class RoleAwareLoginView(LoginView):
@@ -26,13 +27,17 @@ class RoleAwareLoginView(LoginView):
 
 
 @portal_user_required
+@tenant_required
 @require_http_methods(['GET', 'POST'])
 def profile(request):
-	GymSubscription.expire_due()
+	GymSubscription.expire_due(request.gym)
 	profile, _ = Profile.objects.get_or_create(user=request.user)
 	profile_form = ProfileForm(request.POST if request.method == 'POST' and 'save_profile' in request.POST else None,
 							   instance=request.user, profile=profile)
-	staff_form = StaffUserForm(request.POST if request.method == 'POST' and 'create_staff' in request.POST else None)
+	staff_form = StaffUserForm(
+		request.POST if request.method == 'POST' and 'create_staff' in request.POST else None,
+		gym=request.gym,
+	)
 
 	if request.method == 'POST' and 'save_profile' in request.POST and profile_form.is_valid():
 		profile_form.save()
@@ -48,16 +53,17 @@ def profile(request):
 			return redirect('profile')
 
 	staff_users = Profile.objects.select_related('user').filter(
+		gym=request.gym,
 		role__in=(Profile.ROLE_RECEPTION, Profile.ROLE_COACH, Profile.ROLE_MANAGER),
 	).order_by('user__username')
 	active_subscription = GymSubscription.objects.filter(
-		status=GymSubscription.STATUS_ACTIVE
-	).order_by('-end_date', '-submitted_at').first()
-	pending_request = GymSubscription.objects.filter(
-		status=GymSubscription.STATUS_PENDING
+		gym=request.gym, status=GymSubscription.STATUS_ACTIVE
+	).order_by('-end_date', '-created_at').first()
+	pending_request = GymSubscriptionRequest.objects.filter(
+		gym=request.gym, status=GymSubscriptionRequest.STATUS_PENDING
 	).order_by('-submitted_at').first()
-	latest_rejected = GymSubscription.objects.filter(
-		status=GymSubscription.STATUS_REJECTED
+	latest_rejected = GymSubscriptionRequest.objects.filter(
+		gym=request.gym, status=GymSubscriptionRequest.STATUS_REJECTED
 	).order_by('-submitted_at').first()
 	return render(request, 'accounts/profile.html', {
 		'profile_form': profile_form,
@@ -69,18 +75,23 @@ def profile(request):
 		'pending_request': pending_request,
 		'latest_rejected': latest_rejected,
 		'gym_subscription_request_form': GymSubscriptionRequestForm(),
+		'gym_settings': GymSettings.load(request.gym),
+		'sms_settings': SMSSettings.load(request.gym),
 	})
 
 
 @portal_user_required
+@tenant_required
 @require_POST
 def renew_gym_subscription(request):
 	if user_role(request.user) != Profile.ROLE_MANAGER:
 		raise PermissionDenied
-	if GymSubscription.objects.filter(status=GymSubscription.STATUS_PENDING).exists():
+	if GymSubscriptionRequest.objects.filter(
+		gym=request.gym, status=GymSubscriptionRequest.STATUS_PENDING
+	).exists():
 		messages.error(request, 'یک درخواست تمدید در انتظار بررسی دارید.')
 		return redirect('profile')
-	form = GymSubscriptionRequestForm(request.POST, request.FILES)
+	form = GymSubscriptionRequestForm(request.POST, request.FILES, gym=request.gym)
 	if not form.is_valid():
 		messages.error(request, 'درخواست نامعتبر است؛ پلن و تصویر رسید را بررسی کنید.')
 		return redirect('profile')

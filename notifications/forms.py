@@ -14,9 +14,18 @@ class AnnouncementForm(forms.ModelForm):
             'classes': forms.SelectMultiple(attrs={'class': 'form-select', 'size': 4}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, gym, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['classes'].queryset = GymClass.objects.filter(is_active=True).order_by('name')
+        self.gym = gym
+        self.fields['classes'].queryset = GymClass.objects.filter(gym=gym, is_active=True).order_by('name')
+
+    def save(self, commit=True):
+        announcement = super().save(commit=False)
+        announcement.gym = self.gym
+        if commit:
+            announcement.save()
+            self.save_m2m()
+        return announcement
 
 
 class SMSSettingsForm(forms.ModelForm):

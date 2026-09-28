@@ -5,7 +5,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from classes.models import GymClass
-from core.mixins import role_required
+from core.mixins import role_required, tenant_required
 from members.models import Member
 from .forms import AnnouncementForm, SMSSettingsForm
 from .models import (
@@ -16,19 +16,23 @@ from .models import (
 )
 
 
+@tenant_required
 @role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def notification_list(request):
-	form = AnnouncementForm(request.POST or None)
+	form = AnnouncementForm(request.POST or None, gym=request.gym)
 	if request.method == 'POST' and form.is_valid():
 		with transaction.atomic():
 			announcement = form.save(commit=False)
 			announcement.created_by = request.user
 			announcement.save()
 			form.save_m2m()
-			recipients = Member.objects.filter(gym_class__in=announcement.classes.all()).distinct()
+			recipients = Member.objects.filter(
+				gym=request.gym, gym_class__in=announcement.classes.all()
+			).distinct()
 			SMSMessage.objects.bulk_create([
 				SMSMessage(
+					gym=request.gym,
 					member=member,
 					message_type=SMSMessage.TYPE_ANNOUNCEMENT,
 					body=announcement.body,
@@ -38,28 +42,29 @@ def notification_list(request):
 			])
 		messages.success(request, 'اعلانیه ثبت شد؛ پیامک‌ها در صف ارسال قرار گرفتند.')
 		return redirect('notification_list')
-	messages_log = SMSMessage.objects.select_related('member').prefetch_related(
+	messages_log = SMSMessage.objects.filter(gym=request.gym).select_related('member').prefetch_related(
 		'member__subscriptions__plan'
 	)
 	page_obj = Paginator(messages_log, 25).get_page(request.GET.get('page'))
 	return render(request, 'notifications/notification_list.html', {
 		'form': form,
-		'announcements': Announcement.objects.prefetch_related('classes').all(),
+		'announcements': Announcement.objects.filter(gym=request.gym).prefetch_related('classes'),
 		'messages_log': page_obj,
 		'page_obj': page_obj,
-		'classes': GymClass.objects.select_related('coach').filter(is_active=True),
+		'classes': GymClass.objects.select_related('coach').filter(gym=request.gym, is_active=True),
 	})
 
 
+@tenant_required
 @role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def notification_settings(request):
-	settings_obj = SMSSettings.load()
+	settings_obj = SMSSettings.load(request.gym)
 	settings_form = SMSSettingsForm(
 		request.POST if request.method == 'POST' and 'save_global' in request.POST else None,
 		instance=settings_obj,
 	)
-	members = Member.objects.select_related('gym_class').prefetch_related('subscriptions').order_by(
+	members = Member.objects.filter(gym=request.gym).select_related('gym_class').prefetch_related('subscriptions').order_by(
 		'last_name', 'first_name'
 	)
 	if request.method == 'POST' and 'save_global' in request.POST and settings_form.is_valid():

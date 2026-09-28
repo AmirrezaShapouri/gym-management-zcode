@@ -1,10 +1,17 @@
 from django import forms
 
-from members.models import Subscription
+from classes.models import ClassPlan
+from members.models import Member, Subscription
 from .models import Expense, Payment
 
 
 class PaymentForm(forms.ModelForm):
+    def __init__(self, *args, gym, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['member'].queryset = Member.objects.filter(gym=gym)
+        self.fields['subscription'].queryset = Subscription.objects.filter(member__gym=gym)
+        self.gym = gym
+
     class Meta:
         model = Payment
         fields = ('member', 'subscription', 'amount', 'plan_label', 'method', 'status', 'reference', 'date', 'note')
@@ -35,6 +42,11 @@ class PaymentForm(forms.ModelForm):
 
 
 class SubscriptionForm(forms.ModelForm):
+    def __init__(self, *args, gym, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['member'].queryset = Member.objects.filter(gym=gym)
+        self.fields['plan'].queryset = ClassPlan.objects.filter(gym_class__gym=gym)
+
     class Meta:
         model = Subscription
         fields = ('member', 'plan', 'sessions', 'price', 'start_date', 'end_date', 'status')
@@ -54,6 +66,18 @@ class SubscriptionForm(forms.ModelForm):
             self.fields[field_name].input_formats = ['%Y-%m-%d']
 
 class ExpenseForm(forms.ModelForm):
+    def __init__(self, *args, gym, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.gym = gym
+
+    def save(self, commit=True):
+        expense = super().save(commit=False)
+        expense.gym = self.gym
+        if commit:
+            expense.save()
+            self.save_m2m()
+        return expense
+
     class Meta:
         model = Expense
         fields = ('title', 'category', 'vendor', 'amount', 'date', 'status', 'method', 'reference', 'note')
