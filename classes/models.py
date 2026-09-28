@@ -47,7 +47,7 @@ class GymClass(models.Model):
 
     @property
     def enrolled_count(self):
-        return self.members.count()
+        return getattr(self, '_member_count', None) if hasattr(self, '_member_count') else self.members.count()
 
     @property
     def remaining_capacity(self):

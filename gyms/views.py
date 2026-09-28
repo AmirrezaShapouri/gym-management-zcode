@@ -2,12 +2,12 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
-from core.mixins import portal_user_required
+from core.mixins import role_required
 from .forms import GymSettingsForm
 from .models import GymSettings
 
 
-@portal_user_required
+@role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def settings(request):
 	gym = GymSettings.load()

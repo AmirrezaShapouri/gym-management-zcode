@@ -4,7 +4,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from classes.models import GymClass
-from core.mixins import portal_user_required
+from core.mixins import role_required
 from members.models import Member
 from .forms import AnnouncementForm, SMSSettingsForm
 from .models import (
@@ -15,7 +15,7 @@ from .models import (
 )
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def notification_list(request):
 	form = AnnouncementForm(request.POST or None)
@@ -40,15 +40,17 @@ def notification_list(request):
 	return render(request, 'notifications/notification_list.html', {
 		'form': form,
 		'announcements': Announcement.objects.prefetch_related('classes').all(),
-		'messages_log': SMSMessage.objects.select_related('member').all(),
+		'messages_log': SMSMessage.objects.select_related('member').prefetch_related(
+			'member__subscriptions__plan'
+		),
 		'classes': GymClass.objects.select_related('coach').filter(is_active=True),
 	})
 
 
-@portal_user_required
+@role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def notification_settings(request):
-	settings_obj = SMSSettings.objects.first() or SMSSettings()
+	settings_obj = SMSSettings.load()
 	settings_form = SMSSettingsForm(
 		request.POST if request.method == 'POST' and 'save_global' in request.POST else None,
 		instance=settings_obj,

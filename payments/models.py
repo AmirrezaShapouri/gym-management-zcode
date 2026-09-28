@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+import uuid
 
 
 class Payment(models.Model):
@@ -23,7 +24,7 @@ class Payment(models.Model):
         (METHOD_ONLINE, METHOD_ONLINE),
     ]
 
-    member = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='payments',
+    member = models.ForeignKey('members.Member', on_delete=models.PROTECT, related_name='payments',
                                verbose_name='عضو')
     subscription = models.ForeignKey('members.Subscription', on_delete=models.SET_NULL, null=True,
                                      blank=True, related_name='payments', verbose_name='اشتراک')
@@ -33,7 +34,7 @@ class Payment(models.Model):
     method = models.CharField('روش پرداخت', max_length=30, choices=METHOD_CHOICES,
                               default=METHOD_CARD)
     status = models.CharField('وضعیت', max_length=20, choices=STATUS_CHOICES, default=STATUS_SUCCESS)
-    reference = models.CharField('شماره پیگیری', max_length=60, blank=True)
+    reference = models.CharField('شماره پیگیری', max_length=60, blank=True, unique=True)
     operator = models.CharField('ثبت‌کننده', max_length=60, blank=True)
     note = models.TextField('یادداشت', blank=True)
     date = models.DateField('تاریخ پرداخت')
@@ -49,7 +50,7 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            self.reference = f'TRX{self.__class__.objects.count() + 1:06d}'
+            self.reference = f'TRX{uuid.uuid4().hex}'
         if not self.plan_label and self.subscription:
             self.plan_label = self.subscription.plan_sessions_label
         super().save(*args, **kwargs)

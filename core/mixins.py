@@ -21,6 +21,37 @@ def is_manager(user):
     return user_role(user) == 'manager'
 
 
+def role_required(*roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if user_role(request.user) not in roles:
+                if not request.user.is_authenticated:
+                    return redirect('login')
+                raise PermissionDenied('شما اجازهٔ دسترسی به این بخش را ندارید.')
+            return view_func(request, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def coach_class_ids(user):
+    profile = getattr(user, 'profile', None)
+    phone = getattr(profile, 'phone', '').strip()
+    if not phone:
+        return []
+
+    from classes.models import Coach, GymClass
+
+    coaches = Coach.objects.filter(phone=phone)
+    if coaches.count() != 1:
+        return []
+    return GymClass.objects.filter(coach_id=coaches.values_list('pk', flat=True)[0]).values_list(
+        'pk', flat=True
+    )
+
+
 class ManagerRequiredMixin(UserPassesTestMixin):
     """فقط مدیر به این ویو دسترسی دارد."""
 

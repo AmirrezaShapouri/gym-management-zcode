@@ -5,7 +5,7 @@ from gyms.models import GymSettings
 
 def gym_context(request):
     try:
-        gym = GymSettings.objects.first()
+        gym = GymSettings.load()
     except Exception:
         # قبل از اجرای migrate جدول هنوز وجود ندارد
         gym = None

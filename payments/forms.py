@@ -53,15 +53,6 @@ class SubscriptionForm(forms.ModelForm):
         for field_name in ('start_date', 'end_date'):
             self.fields[field_name].input_formats = ['%Y-%m-%d']
 
-    def clean(self):
-        cleaned_data = super().clean()
-        plan = cleaned_data.get('plan')
-        sessions = cleaned_data.get('sessions')
-        if plan and sessions and plan.sessions != sessions:
-            self.add_error('sessions', 'تعداد جلسات باید با پلن انتخاب‌شده یکسان باشد.')
-        return cleaned_data
-
-
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense

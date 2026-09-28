@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -18,12 +19,15 @@ class GymSettings(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if self.pk not in (None, 1):
+            raise ValidationError('فقط یک رکورد تنظیمات باشگاه مجاز است.')
+        self.pk = 1
+        super().save(*args, **kwargs)
+
     @classmethod
     def load(cls):
-        obj = cls.objects.first()
-        if obj is None:
-            obj = cls.objects.create()
-        return obj
+        return cls.objects.get_or_create(pk=1)[0]
 
 
 class GymSubscription(models.Model):

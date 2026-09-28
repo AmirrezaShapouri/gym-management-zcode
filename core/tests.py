@@ -1,8 +1,11 @@
+from datetime import date
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 
 from classes.models import Coach, ClassPlan, GymClass
 from members.models import Member, Subscription
+from core.jalali import date_to_jalali_str, gregorian_to_jalali, jalali_str_to_date
 
 
 class PortalEntryTests(TestCase):
@@ -51,3 +54,26 @@ class PortalEntryTests(TestCase):
 		for path in paths:
 			with self.subTest(path=path):
 				self.assertEqual(self.client.get(path).status_code, 200)
+
+
+class JalaliConversionTests(TestCase):
+	def test_normal_date_conversion(self):
+		self.assertEqual(date_to_jalali_str(date(2024, 3, 20)), '۱۴۰۳/۰۱/۰۱')
+		self.assertEqual(jalali_str_to_date('1403/01/01'), date(2024, 3, 20))
+
+	def test_persian_and_english_digits_are_accepted(self):
+		self.assertEqual(jalali_str_to_date('۱۴۰۳/۰۱/۰۱'), date(2024, 3, 20))
+		self.assertEqual(jalali_str_to_date('1403-01-01'), date(2024, 3, 20))
+
+	def test_leap_year_esfand_30(self):
+		self.assertEqual(jalali_str_to_date('1399/12/30'), date(2021, 3, 20))
+		self.assertIsNone(jalali_str_to_date('1400/12/30'))
+
+	def test_end_of_esfand_and_start_of_farvardin(self):
+		self.assertEqual(jalali_str_to_date('1402/12/29'), date(2024, 3, 19))
+		self.assertEqual(gregorian_to_jalali(2024, 3, 20), (1403, 1, 1))
+
+	def test_invalid_jalali_dates_are_rejected(self):
+		for value in ('1403/13/01', '1403/00/01', '1403/01/32', '1402/12/30', 'invalid'):
+			with self.subTest(value=value):
+				self.assertIsNone(jalali_str_to_date(value))

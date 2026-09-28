@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from attendance.models import Attendance
 from classes.models import GymClass
-from core.mixins import portal_user_required
+from core.mixins import role_required
 from members.models import Member, Subscription
 from payments.models import Expense, Payment
 
@@ -20,7 +20,7 @@ def home(request):
 
 
 @login_required
-@portal_user_required
+@role_required('manager', 'reception')
 def dashboard(request):
 	today = timezone.localdate()
 	month_start = today.replace(day=1)

@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from classes.models import ClassPlan, Coach, GymClass
@@ -33,11 +33,24 @@ class Member(models.Model):
 
     @property
     def active_subscription(self):
+        subscriptions = self._prefetched_subscriptions()
+        if subscriptions is not None:
+            return max(
+                (item for item in subscriptions if item.status == Subscription.STATUS_ACTIVE),
+                key=lambda item: (item.start_date, item.pk),
+                default=None,
+            )
         return self.subscriptions.filter(status=Subscription.STATUS_ACTIVE).order_by('-start_date').first()
 
     @property
     def latest_subscription(self):
-        return self.subscriptions.order_by('-start_date').first()
+        subscriptions = self._prefetched_subscriptions()
+        if subscriptions is not None:
+            return max(subscriptions, key=lambda item: (item.start_date, item.pk), default=None)
+        return self.subscriptions.order_by('-start_date', '-pk').first()
+
+    def _prefetched_subscriptions(self):
+        return getattr(self, '_prefetched_objects_cache', {}).get('subscriptions')
 
 
 class Subscription(models.Model):
@@ -73,13 +86,43 @@ class Subscription(models.Model):
     def clean(self):
         if self.end_date and self.start_date and self.end_date < self.start_date:
             raise ValidationError('تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد.')
+        if self.pk:
+            previous = Subscription.objects.filter(pk=self.pk).values(
+                'plan_id', 'sessions', 'price'
+            ).first()
+        else:
+            previous = None
+        plan_details_changed = previous is None or any(
+            getattr(self, field_name) != previous[field_name]
+            for field_name in ('plan_id', 'sessions', 'price')
+        )
+        if plan_details_changed and self.plan_id and self.sessions != self.plan.sessions:
+            raise ValidationError({'sessions': 'تعداد جلسات باید با پلن انتخاب‌شده یکسان باشد.'})
+        if plan_details_changed and self.plan_id and self.price not in (0, self.plan.price):
+            raise ValidationError({'price': 'قیمت باید با قیمت پلن انتخاب‌شده یکسان باشد.'})
+        if self.member_id and self.plan_id and self.member.gym_class_id and (
+            self.member.gym_class_id != self.plan.gym_class_id
+        ):
+            raise ValidationError({'plan': 'پلن باید متعلق به کلاس عضو باشد.'})
+        if self.remaining_sessions < 0:
+            raise ValidationError({'remaining_sessions': 'جلسات باقی‌مانده نمی‌تواند منفی باشد.'})
+        if self.remaining_sessions > self.sessions:
+            raise ValidationError({'remaining_sessions': 'جلسات باقی‌مانده نمی‌تواند از کل جلسات بیشتر باشد.'})
 
     def save(self, *args, **kwargs):
-        if not self.pk and self.sessions:
-            self.remaining_sessions = self.sessions
-        if not self.price and self.plan:
-            self.price = self.plan.price
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            previous = None
+            if self.pk:
+                previous = Subscription.objects.select_for_update().filter(pk=self.pk).first()
+            if self.plan_id and not self.price:
+                self.price = self.plan.price
+            if previous is None:
+                self.remaining_sessions = self.sessions
+            elif self.sessions != previous.sessions:
+                consumed_sessions = max(previous.sessions - previous.remaining_sessions, 0)
+                self.remaining_sessions = max(self.sessions - consumed_sessions, 0)
+            self.clean()
+            super().save(*args, **kwargs)
 
     @property
     def status_label(self):

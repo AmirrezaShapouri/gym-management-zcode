@@ -24,3 +24,9 @@ class MemberNotificationSettingAdmin(admin.ModelAdmin):
 @admin.register(SMSSettings)
 class SMSSettingsAdmin(admin.ModelAdmin):
     list_display = ('enabled', 'expiry_sms', 'payment_sms', 'registration_sms', 'reminder_sms')
+
+    def has_add_permission(self, request):
+        return not SMSSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

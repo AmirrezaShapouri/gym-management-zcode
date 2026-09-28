@@ -1,11 +1,12 @@
 from django import forms
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from core.mixins import portal_user_required
+from core.mixins import coach_class_ids, role_required, user_role
 from classes.models import GymClass
 from members.models import Member
 from .models import Attendance
@@ -22,16 +23,20 @@ class AttendanceSelectionForm(forms.Form):
 		widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
 	)
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, *args, class_ids=None, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.fields['gym_class'].queryset = GymClass.objects.filter(is_active=True).order_by('name')
+		classes = GymClass.objects.filter(is_active=True)
+		if class_ids is not None:
+			classes = classes.filter(pk__in=class_ids)
+		self.fields['gym_class'].queryset = classes.order_by('name')
 		self.fields['date'].input_formats = ['%Y-%m-%d']
 
 
-@portal_user_required
+@role_required('manager', 'reception', 'coach')
 @require_http_methods(['GET', 'POST'])
 def attendance(request):
-	form = AttendanceSelectionForm(request.POST or request.GET or None, initial={
+	class_ids = coach_class_ids(request.user) if user_role(request.user) == 'coach' else None
+	form = AttendanceSelectionForm(request.POST or request.GET or None, class_ids=class_ids, initial={
 		'date': timezone.localdate(),
 	})
 	members = Member.objects.none()
@@ -39,30 +44,26 @@ def attendance(request):
 	if request.method == 'POST' and form.is_valid():
 		gym_class = form.cleaned_data['gym_class']
 		attendance_date = form.cleaned_data['date']
-		members = Member.objects.filter(gym_class=gym_class).select_related('coach').order_by(
-			'last_name', 'first_name'
-		)
+		members = Member.objects.filter(gym_class=gym_class).select_related('coach').prefetch_related(
+			'subscriptions__plan'
+		).order_by('last_name', 'first_name')
 		valid_statuses = {value for value, _ in Attendance.STATUS_CHOICES}
-		with transaction.atomic():
-			for member in members:
-				status = request.POST.get(f'status_{member.pk}')
-				if status not in valid_statuses:
-					continue
-				record = Attendance(
-					member=member,
-					gym_class=gym_class,
-					date=attendance_date,
-					status=status,
-					recorded_by=request.user,
-				)
-				record.full_clean()
-				Attendance.objects.update_or_create(
-					member=member,
-					gym_class=gym_class,
-					date=attendance_date,
-					defaults={'status': status, 'recorded_by': request.user},
-				)
-		messages.success(request, 'حضور و غیاب ثبت شد.')
+		try:
+			with transaction.atomic():
+				for member in members:
+					status = request.POST.get(f'status_{member.pk}')
+					if status not in valid_statuses:
+						continue
+					Attendance.objects.update_or_create(
+						member=member,
+						gym_class=gym_class,
+						date=attendance_date,
+						defaults={'status': status, 'recorded_by': request.user},
+					)
+		except ValidationError as error:
+			form.add_error(None, error)
+		else:
+			messages.success(request, 'حضور و غیاب ثبت شد.')
 		existing = {
 			row.member_id: row.status
 			for row in Attendance.objects.filter(gym_class=gym_class, date=attendance_date)
@@ -70,9 +71,9 @@ def attendance(request):
 	elif request.method == 'GET' and form.is_valid():
 		gym_class = form.cleaned_data['gym_class']
 		attendance_date = form.cleaned_data['date']
-		members = Member.objects.filter(gym_class=gym_class).select_related('coach').order_by(
-			'last_name', 'first_name'
-		)
+		members = Member.objects.filter(gym_class=gym_class).select_related('coach').prefetch_related(
+			'subscriptions__plan'
+		).order_by('last_name', 'first_name')
 		existing = {
 			row.member_id: row.status
 			for row in Attendance.objects.filter(gym_class=gym_class, date=attendance_date)
@@ -88,9 +89,13 @@ def attendance(request):
 	})
 
 
-@portal_user_required
+@role_required('manager', 'reception', 'coach')
 def attendance_history(request):
-	records = Attendance.objects.select_related('member', 'gym_class').all()
+	records = Attendance.objects.select_related('member', 'gym_class').prefetch_related(
+		'member__subscriptions__plan'
+	)
+	if user_role(request.user) == 'coach':
+		records = records.filter(gym_class_id__in=coach_class_ids(request.user))
 	query = request.GET.get('q', '').strip()
 	if query:
 		records = records.filter(member__first_name__icontains=query) | records.filter(

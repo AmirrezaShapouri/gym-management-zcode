@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class SMSMessage(models.Model):
@@ -88,3 +89,13 @@ class SMSSettings(models.Model):
 
     def __str__(self):
         return 'تنظیمات پیامک'
+
+    def save(self, *args, **kwargs):
+        if self.pk not in (None, 1):
+            raise ValidationError('فقط یک رکورد تنظیمات پیامک مجاز است.')
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        return cls.objects.get_or_create(pk=1)[0]

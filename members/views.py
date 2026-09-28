@@ -1,14 +1,15 @@
 from django.contrib import messages
 from django.db.models import Q
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
-from core.mixins import portal_user_required
+from core.mixins import role_required
 from .forms import MemberForm
 from .models import Member
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 def member_list(request):
 	members = Member.objects.select_related('gym_class', 'coach').prefetch_related(
 		'subscriptions__plan'
@@ -34,7 +35,7 @@ def member_list(request):
 	})
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def member_create(request):
 	form = MemberForm(request.POST or None)
@@ -45,7 +46,7 @@ def member_create(request):
 	return render(request, 'members/member_form.html', {'form': form, 'is_create': True})
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 def member_detail(request, pk):
 	member = get_object_or_404(
 		Member.objects.select_related('gym_class', 'coach').prefetch_related(
@@ -56,7 +57,7 @@ def member_detail(request, pk):
 	return render(request, 'members/member_detail.html', {'member': member})
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def member_update(request, pk):
 	member = get_object_or_404(Member, pk=pk)
@@ -72,12 +73,16 @@ def member_update(request, pk):
 	})
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 @require_http_methods(['GET', 'POST'])
 def member_delete(request, pk):
 	member = get_object_or_404(Member, pk=pk)
 	if request.method == 'POST':
-		member.delete()
+		try:
+			member.delete()
+		except ProtectedError:
+			messages.error(request, 'عضو دارای سابقهٔ مالی یا حضور و غیاب است و قابل حذف نیست.')
+			return redirect('member_detail', pk=member.pk)
 		messages.success(request, 'عضو حذف شد.')
 		return redirect('member_list')
 	return render(request, 'members/member_confirm_delete.html', {'member': member})

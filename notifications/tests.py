@@ -1,9 +1,10 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from classes.models import Coach, GymClass
 from members.models import Member
-from .models import Announcement, SMSMessage
+from .models import Announcement, SMSMessage, SMSSettings
 
 
 class NotificationWorkflowTests(TestCase):
@@ -30,6 +31,10 @@ class NotificationWorkflowTests(TestCase):
 		self.assertEqual(message.status, SMSMessage.STATUS_PENDING)
 
 	def test_notification_settings_render_and_save_member_preferences(self):
+		manager = User.objects.create_user(username='manager-settings', password='test-password')
+		manager.profile.role = 'manager'
+		manager.profile.save(update_fields=['role'])
+		self.client.force_login(manager)
 		response = self.client.get('/notifications/settings/')
 		self.assertEqual(response.status_code, 200)
 		response = self.client.post('/notifications/settings/', {
@@ -41,3 +46,8 @@ class NotificationWorkflowTests(TestCase):
 		self.member.refresh_from_db()
 		self.assertTrue(self.member.notification_setting.class_reminder)
 		self.assertFalse(self.member.notification_setting.subscription_expiry)
+
+	def test_sms_settings_reject_a_second_record(self):
+		SMSSettings.load()
+		with self.assertRaises(ValidationError):
+			SMSSettings(pk=2).save()

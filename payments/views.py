@@ -4,13 +4,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from core.mixins import portal_user_required
+from core.mixins import role_required
 from members.models import Subscription
 from .forms import ExpenseForm, PaymentForm, SubscriptionForm
 from .models import Expense, Payment
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 def payment_list(request):
 	payments = Payment.objects.select_related('member', 'subscription').all()
 	query = request.GET.get('q', '').strip()
@@ -44,7 +44,7 @@ def payment_list(request):
 	})
 
 
-@portal_user_required
+@role_required('manager', 'reception')
 def payment_detail(request, pk):
 	payment = get_object_or_404(
 		Payment.objects.select_related('member', 'subscription__plan'),
@@ -53,7 +53,7 @@ def payment_detail(request, pk):
 	return render(request, 'payments/payment_detail.html', {'payment': payment})
 
 
-@portal_user_required
+@role_required('manager')
 @require_POST
 def payment_delete(request, pk):
 	get_object_or_404(Payment, pk=pk).delete()
@@ -61,13 +61,13 @@ def payment_delete(request, pk):
 	return redirect('payment_list')
 
 
-@portal_user_required
+@role_required('manager')
 def subscription_list(request):
 	subscriptions = Subscription.objects.select_related('member', 'plan__gym_class').all()
 	return render(request, 'payments/subscription_list.html', {'subscriptions': subscriptions})
 
 
-@portal_user_required
+@role_required('manager')
 def subscription_detail(request, pk):
 	subscription = get_object_or_404(
 		Subscription.objects.select_related('member', 'plan__gym_class').prefetch_related('payments'),
@@ -76,7 +76,7 @@ def subscription_detail(request, pk):
 	return render(request, 'payments/subscription_detail.html', {'subscription': subscription})
 
 
-@portal_user_required
+@role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def subscription_create(request):
 	form = SubscriptionForm(request.POST or None)
@@ -87,7 +87,7 @@ def subscription_create(request):
 	return render(request, 'payments/subscription_form.html', {'form': form})
 
 
-@portal_user_required
+@role_required('manager')
 @require_http_methods(['GET', 'POST'])
 def expense_list(request):
 	expenses = Expense.objects.all()
@@ -117,7 +117,7 @@ def expense_list(request):
 	})
 
 
-@portal_user_required
+@role_required('manager')
 @require_POST
 def expense_delete(request, pk):
 	get_object_or_404(Expense, pk=pk).delete()
@@ -125,7 +125,7 @@ def expense_delete(request, pk):
 	return redirect('expense_list')
 
 
-@portal_user_required
+@role_required('manager')
 def finance_dashboard(request):
 	today = timezone.localdate()
 	month_start = today.replace(day=1)

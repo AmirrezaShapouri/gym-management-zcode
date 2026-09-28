@@ -108,8 +108,11 @@ def jalali_str_to_date(value):
         return None
     try:
         jy, jm, jd = int(parts[0]), int(parts[1]), int(parts[2])
+        if not 1 <= jm <= 12 or jd < 1:
+            return None
         gy, gm, gd = jalali_to_gregorian(jy, jm, jd)
-        return date(gy, gm, gd)
+        converted = date(gy, gm, gd)
+        return converted if gregorian_to_jalali(gy, gm, gd) == (jy, jm, jd) else None
     except (ValueError, OverflowError):
         return None
 
