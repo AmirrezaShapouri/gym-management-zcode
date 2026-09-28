@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -46,6 +46,22 @@ class AttendanceWorkflowTests(TestCase):
 		response = self.client.get('/attendance/history/?q=عضو')
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(len(response.context['records']), 1)
+
+	def test_attendance_history_paginates_and_preserves_date_filters(self):
+		start_date = date(2026, 1, 1)
+		for day in range(26):
+			Attendance.objects.create(
+				member=self.member,
+				gym_class=self.gym_class,
+				date=start_date + timedelta(days=day),
+				status=Attendance.STATUS_EXCUSED,
+			)
+		response = self.client.get('/attendance/history/', {
+			'from': '2026-01-01', 'to': '2026-01-31', 'page': '2',
+		})
+		self.assertEqual(response.context['page_obj'].number, 2)
+		self.assertEqual(len(response.context['records']), 1)
+		self.assertContains(response, 'from=2026-01-01')
 
 	def test_attendance_without_selected_status_is_not_recorded(self):
 		response = self.client.post('/attendance/', {

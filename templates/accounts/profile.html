@@ -130,13 +130,13 @@
                                 </h5>
                                 <p class="text-muted mb-0">وضعیت اشتراک و زمان تمدید سرویس مدیریت باشگاه</p>
                             </div>
-                            <span id="gymSubscriptionStatus" class="badge bg-success">{% if gym_subscription %}{{ gym_subscription.status }}{% else %}بدون اشتراک{% endif %}</span>
+                            <span id="gymSubscriptionStatus" class="badge {% if gym_subscription %}bg-success{% elif pending_request %}bg-warning text-dark{% elif latest_rejected %}bg-danger{% else %}bg-secondary{% endif %}">{% if gym_subscription %}{{ gym_subscription.get_status_display }}{% elif pending_request %}{{ pending_request.get_status_display }}{% elif latest_rejected %}{{ latest_rejected.get_status_display }}{% else %}بدون اشتراک{% endif %}</span>
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-3 col-6">
                                 <div class="text-muted small">پلن فعلی</div>
-                                <div class="fw-bold">{% if gym_subscription %}{{ gym_subscription.get_sessions_display }}{% else %}-{% endif %}</div>
+                                <div class="fw-bold">{% if gym_subscription %}{{ gym_subscription.get_sessions_display }}{% elif pending_request %}{{ pending_request.get_sessions_display }}{% elif latest_rejected %}{{ latest_rejected.get_sessions_display }}{% else %}-{% endif %}</div>
                             </div>
                             <div class="col-md-3 col-6">
                                 <div class="text-muted small">تاریخ شروع</div>
@@ -148,18 +148,20 @@
                             </div>
                             <div class="col-md-3 col-6">
                                 <div class="text-muted small">مبلغ دوره</div>
-                                <div id="gymSubscriptionPrice" class="fw-bold">{% if gym_subscription %}{{ gym_subscription.price }} تومان{% else %}-{% endif %}</div>
+                                <div id="gymSubscriptionPrice" class="fw-bold">{% if gym_subscription %}{{ gym_subscription.price }} تومان{% elif pending_request %}{{ pending_request.price }} تومان{% elif latest_rejected %}{{ latest_rejected.price }} تومان{% else %}-{% endif %}</div>
                             </div>
                         </div>
 
                         <div
                             class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-top mt-4 pt-3">
-                            <span class="text-muted"><i class="fas fa-clock"></i>{% if gym_subscription %} پایان دوره {{ gym_subscription.end_date|date:'Y/m/d' }}{% else %} اشتراکی ثبت نشده است{% endif %}</span>
-                            {% if can_manage_users and gym_subscription %}<button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                            <span class="text-muted"><i class="fas fa-clock"></i>{% if gym_subscription %} پایان دوره {{ gym_subscription.end_date|date:'Y/m/d' }}{% elif pending_request %}درخواست شما در انتظار بررسی است.{% else %} اشتراکی ثبت نشده است{% endif %}</span>
+                            {% if can_manage_users and not pending_request %}<button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
                                 data-bs-target="#renewSubscriptionModal">
-                                <i class="fas fa-sync-alt"></i> تمدید اشتراک
+                                <i class="fas fa-sync-alt"></i> {% if latest_rejected %}ارسال مجدد رسید{% else %}درخواست تمدید{% endif %}
                             </button>{% endif %}
                         </div>
+                        {% if pending_request %}<div class="alert alert-warning mt-3 mb-0">درخواست {{ pending_request.get_sessions_display }} به مبلغ {{ pending_request.price }} تومان در انتظار بررسی است.</div>{% endif %}
+                        {% if latest_rejected and not pending_request %}<div class="alert alert-danger mt-3 mb-0"><strong>درخواست قبلی رد شد:</strong> {{ latest_rejected.rejection_reason }}</div>{% endif %}
                     </div>
                 </div>
 
@@ -315,32 +317,29 @@
                     <h5 class="modal-title">تمدید اشتراک باشگاه</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="renewSubscriptionForm" method="post" action="{% url 'gym_subscription_renew' %}">
+                <form id="renewSubscriptionForm" method="post" enctype="multipart/form-data" action="{% url 'gym_subscription_renew' %}">
                     {% csrf_token %}
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="subscriptionPlan" class="form-label">انتخاب دوره</label>
-                            <select id="subscriptionPlan" name="sessions" class="form-select">
-                                <option value="12" data-price="۲,۵۰۰,۰۰۰ تومان">۱۲ جلسه - ۲,۵۰۰,۰۰۰ تومان</option>
-                                <option value="36" data-price="۶,۰۰۰,۰۰۰ تومان">۳۶ جلسه - ۶,۰۰۰,۰۰۰ تومان
-                                </option>
-                                <option value="120" data-price="۲۵,۰۰۰,۰۰۰ تومان">۱۲۰ جلسه - ۲۵,۰۰۰,۰۰۰ تومان</option>
-                            </select>
+                            {{ gym_subscription_request_form.sessions.label_tag }}
+                            {{ gym_subscription_request_form.sessions }}
                         </div>
                         <div class="mb-3">
-                            <label for="subscriptionPayment" class="form-label">روش پرداخت</label>
-                            <select id="subscriptionPayment" class="form-select">
-                                <option>درگاه پرداخت آنلاین</option>
-                                <option>پرداخت کارت به کارت</option>
-                            </select>
+                            <label class="form-label">مبلغ پلن</label>
+                            <output id="subscriptionPlanPrice" class="form-control">۲,۵۰۰,۰۰۰ تومان</output>
+                        </div>
+                        <div class="mb-3">
+                            {{ gym_subscription_request_form.invoice_image.label_tag }}
+                            {{ gym_subscription_request_form.invoice_image }}
+                            {{ gym_subscription_request_form.invoice_image.errors }}
                         </div>
                         <div class="alert alert-info mb-0">
-                            <i class="fas fa-info-circle"></i> پس از ثبت، درخواست تمدید برای بررسی و پرداخت ثبت می‌شود.
+                            <i class="fas fa-info-circle"></i> پس از پرداخت کارت به کارت، تصویر رسید پرداخت را آپلود کنید. درخواست شما پس از بررسی مدیریت فعال خواهد شد.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-credit-card"></i> ثبت درخواست
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> ارسال درخواست تمدید
                             تمدید</button>
                     </div>
                 </form>
@@ -350,6 +349,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/main.js"></script>
+    <script>
+        const planSelect = document.getElementById('id_sessions');
+        const planPrice = document.getElementById('subscriptionPlanPrice');
+        const planPrices = {'12': '۲,۵۰۰,۰۰۰ تومان', '36': '۶,۰۰۰,۰۰۰ تومان', '120': '۲۵,۰۰۰,۰۰۰ تومان'};
+        if (planSelect && planPrice) {
+            planSelect.addEventListener('change', () => {
+                planPrice.textContent = planPrices[planSelect.value] || '';
+            });
+        }
+    </script>
 </body>
 
 </html>

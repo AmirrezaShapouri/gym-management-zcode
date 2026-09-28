@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -23,6 +24,8 @@ def payment_list(request):
 		)
 	if status in dict(Payment.STATUS_CHOICES):
 		payments = payments.filter(status=status)
+	filtered_payments = payments
+	page_obj = Paginator(payments, 25).get_page(request.GET.get('page'))
 	form = PaymentForm(request.POST or None)
 	if request.method == 'POST' and form.is_valid():
 		payment = form.save(commit=False)
@@ -33,13 +36,14 @@ def payment_list(request):
 	today = timezone.localdate()
 	monthly = Payment.objects.filter(date__year=today.year, date__month=today.month)
 	return render(request, 'payments/payment_list.html', {
-		'payments': payments,
+		'payments': page_obj,
+		'page_obj': page_obj,
 		'query': query,
 		'status': status,
 		'form': form,
-		'success_count': payments.filter(status=Payment.STATUS_SUCCESS).count(),
-		'pending_count': payments.filter(status=Payment.STATUS_PENDING).count(),
-		'failed_count': payments.filter(status=Payment.STATUS_FAILED).count(),
+		'success_count': filtered_payments.filter(status=Payment.STATUS_SUCCESS).count(),
+		'pending_count': filtered_payments.filter(status=Payment.STATUS_PENDING).count(),
+		'failed_count': filtered_payments.filter(status=Payment.STATUS_FAILED).count(),
 		'monthly_income': monthly.filter(status=Payment.STATUS_SUCCESS).aggregate(total=Sum('amount'))['total'] or 0,
 	})
 
@@ -64,7 +68,11 @@ def payment_delete(request, pk):
 @role_required('manager')
 def subscription_list(request):
 	subscriptions = Subscription.objects.select_related('member', 'plan__gym_class').all()
-	return render(request, 'payments/subscription_list.html', {'subscriptions': subscriptions})
+	page_obj = Paginator(subscriptions, 25).get_page(request.GET.get('page'))
+	return render(request, 'payments/subscription_list.html', {
+		'subscriptions': page_obj,
+		'page_obj': page_obj,
+	})
 
 
 @role_required('manager')
@@ -97,6 +105,7 @@ def expense_list(request):
 		expenses = expenses.filter(Q(title__icontains=query) | Q(vendor__icontains=query))
 	if category in dict(Expense.CATEGORY_CHOICES):
 		expenses = expenses.filter(category=category)
+	page_obj = Paginator(expenses, 25).get_page(request.GET.get('page'))
 	form = ExpenseForm(request.POST or None)
 	if request.method == 'POST' and form.is_valid():
 		expense = form.save(commit=False)
@@ -107,7 +116,8 @@ def expense_list(request):
 	today = timezone.localdate()
 	month_expenses = Expense.objects.filter(date__year=today.year, date__month=today.month)
 	return render(request, 'payments/expense_list.html', {
-		'expenses': expenses,
+		'expenses': page_obj,
+		'page_obj': page_obj,
 		'form': form,
 		'query': query,
 		'category': category,

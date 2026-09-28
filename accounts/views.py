@@ -3,11 +3,13 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods, require_POST
 
 from core.mixins import portal_user_required, user_role
+from gyms.forms import GymSubscriptionRequestForm
 from .forms import ProfileForm, StaffUserForm
 from .models import Profile
 from gyms.models import GymSubscription
@@ -26,6 +28,7 @@ class RoleAwareLoginView(LoginView):
 @portal_user_required
 @require_http_methods(['GET', 'POST'])
 def profile(request):
+	GymSubscription.expire_due()
 	profile, _ = Profile.objects.get_or_create(user=request.user)
 	profile_form = ProfileForm(request.POST if request.method == 'POST' and 'save_profile' in request.POST else None,
 							   instance=request.user, profile=profile)
@@ -47,13 +50,25 @@ def profile(request):
 	staff_users = Profile.objects.select_related('user').filter(
 		role__in=(Profile.ROLE_RECEPTION, Profile.ROLE_COACH, Profile.ROLE_MANAGER),
 	).order_by('user__username')
+	active_subscription = GymSubscription.objects.filter(
+		status=GymSubscription.STATUS_ACTIVE
+	).order_by('-end_date', '-submitted_at').first()
+	pending_request = GymSubscription.objects.filter(
+		status=GymSubscription.STATUS_PENDING
+	).order_by('-submitted_at').first()
+	latest_rejected = GymSubscription.objects.filter(
+		status=GymSubscription.STATUS_REJECTED
+	).order_by('-submitted_at').first()
 	return render(request, 'accounts/profile.html', {
 		'profile_form': profile_form,
 		'staff_form': staff_form,
 		'staff_users': staff_users,
 		'profile': profile,
 		'can_manage_users': user_role(request.user) == Profile.ROLE_MANAGER,
-		'gym_subscription': GymSubscription.objects.order_by('-end_date').first(),
+		'gym_subscription': active_subscription,
+		'pending_request': pending_request,
+		'latest_rejected': latest_rejected,
+		'gym_subscription_request_form': GymSubscriptionRequestForm(),
 	})
 
 
@@ -62,19 +77,15 @@ def profile(request):
 def renew_gym_subscription(request):
 	if user_role(request.user) != Profile.ROLE_MANAGER:
 		raise PermissionDenied
-	subscription = GymSubscription.objects.order_by('-end_date').first()
-	if subscription is None:
-		messages.error(request, 'برای ثبت تمدید، ابتدا اشتراک فعلی باید ثبت شود.')
+	if GymSubscription.objects.filter(status=GymSubscription.STATUS_PENDING).exists():
+		messages.error(request, 'یک درخواست تمدید در انتظار بررسی دارید.')
 		return redirect('profile')
-	try:
-		sessions = int(request.POST.get('sessions', ''))
-	except ValueError:
-		sessions = None
-	prices = {12: 2500000, 36: 6000000, 120: 25000000}
-	if sessions not in prices:
-		messages.error(request, 'دورهٔ انتخاب‌شده معتبر نیست.')
+	form = GymSubscriptionRequestForm(request.POST, request.FILES)
+	if not form.is_valid():
+		messages.error(request, 'درخواست نامعتبر است؛ پلن و تصویر رسید را بررسی کنید.')
 		return redirect('profile')
-	subscription.apply_renewal(sessions, prices[sessions])
+	with transaction.atomic():
+		form.save()
 	messages.success(request, 'درخواست تمدید برای بررسی ثبت شد.')
 	return redirect('profile')
 

@@ -1,8 +1,12 @@
 from types import SimpleNamespace
+from io import BytesIO
+from tempfile import TemporaryDirectory
 
 from django.contrib import admin
 from django.contrib.auth.models import User
-from django.test import SimpleTestCase, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import SimpleTestCase, TestCase, override_settings
+from PIL import Image
 
 from accounts.admin_site import RoleRestrictedAdminSite
 from accounts.models import Profile
@@ -107,19 +111,31 @@ class ProfileRoleTests(TestCase):
 		manager.profile.role = Profile.ROLE_MANAGER
 		manager.profile.save(update_fields=['role'])
 		self.client.force_login(manager)
-		subscription = GymSubscription.objects.create(
+		active_subscription = GymSubscription.objects.create(
 			sessions=12,
 			start_date=date(2026, 9, 1),
 			end_date=date(2026, 9, 30),
+			status=GymSubscription.STATUS_ACTIVE,
 		)
+		image_data = BytesIO()
+		Image.new('RGB', (2, 2), color='white').save(image_data, format='PNG')
+		invoice = SimpleUploadedFile('receipt.png', image_data.getvalue(), content_type='image/png')
 
-		response = self.client.post('/accounts/subscription/renew/', {'sessions': '36'})
+		with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+			response = self.client.post('/accounts/subscription/renew/', {
+				'sessions': '36',
+				'invoice_image': invoice,
+			})
 
 		self.assertRedirects(response, '/accounts/profile/')
-		subscription.refresh_from_db()
-		self.assertEqual(subscription.sessions, 36)
-		self.assertEqual(subscription.price, 6000000)
-		self.assertEqual(subscription.status, GymSubscription.STATUS_PENDING)
+		active_subscription.refresh_from_db()
+		self.assertEqual(active_subscription.status, GymSubscription.STATUS_ACTIVE)
+		request = GymSubscription.objects.get(status=GymSubscription.STATUS_PENDING)
+		self.assertEqual(request.sessions, 36)
+		self.assertEqual(request.price, 6000000)
+		self.assertTrue(request.invoice_image.name.startswith('gym_subscriptions/invoices/'))
+		self.assertIsNotNone(request.submitted_at)
+		self.assertEqual(request.status, GymSubscription.STATUS_PENDING)
 
 	def test_invalid_password_change_renders_form(self):
 		user = User.objects.create_user(username='password-user', password='old-password')

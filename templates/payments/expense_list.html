@@ -115,7 +115,7 @@
                                     name="q" value="{{ query }}" placeholder="جستجوی شرح یا فروشنده"></div>
                             <div class="col-md-3"><label class="visually-hidden"
                                     for="expenseCategoryFilter">دسته‌بندی</label><select id="expenseCategoryFilter"
-                                    class="form-select">
+                                    class="form-select" name="category">
                                     <option value="">همه دسته‌بندی‌ها</option>
                                     {% for value, label in category_choices %}<option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
                                 </select></div>
@@ -152,6 +152,7 @@
                             </tbody>
                         </table>
                     </div>
+                    {% include 'core/pagination.html' %}
                 </div>
 
                 <div class="modal fade" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel"

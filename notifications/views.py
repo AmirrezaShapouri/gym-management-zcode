@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
@@ -37,12 +38,15 @@ def notification_list(request):
 			])
 		messages.success(request, 'اعلانیه ثبت شد؛ پیامک‌ها در صف ارسال قرار گرفتند.')
 		return redirect('notification_list')
+	messages_log = SMSMessage.objects.select_related('member').prefetch_related(
+		'member__subscriptions__plan'
+	)
+	page_obj = Paginator(messages_log, 25).get_page(request.GET.get('page'))
 	return render(request, 'notifications/notification_list.html', {
 		'form': form,
 		'announcements': Announcement.objects.prefetch_related('classes').all(),
-		'messages_log': SMSMessage.objects.select_related('member').prefetch_related(
-			'member__subscriptions__plan'
-		),
+		'messages_log': page_obj,
+		'page_obj': page_obj,
 		'classes': GymClass.objects.select_related('coach').filter(is_active=True),
 	})
 

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -107,8 +108,10 @@ def attendance_history(request):
 		records = records.filter(date__gte=from_date)
 	if to_date:
 		records = records.filter(date__lte=to_date)
+	page_obj = Paginator(records, 25).get_page(request.GET.get('page'))
 	return render(request, 'attendance/attendance_history.html', {
-		'records': records,
+		'records': page_obj,
+		'page_obj': page_obj,
 		'query': query,
 		'from_date': from_date,
 		'to_date': to_date,

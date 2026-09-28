@@ -25,7 +25,8 @@ class SMSMessage(models.Model):
         (STATUS_FAILED, STATUS_FAILED),
     ]
 
-    member = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='sms_messages',
+    member = models.ForeignKey('members.Member', on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='sms_messages',
                                verbose_name='عضو')
     message_type = models.CharField('نوع پیام', max_length=30, choices=TYPE_CHOICES)
     body = models.TextField('متن')
@@ -38,7 +39,7 @@ class SMSMessage(models.Model):
         ordering = ('-created_at',)
 
     def __str__(self):
-        return f'{self.member} - {self.message_type}'
+        return f'{self.member or "عضو حذف‌شده"} - {self.message_type}'
 
 
 class Announcement(models.Model):

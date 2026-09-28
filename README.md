@@ -9,5 +9,5 @@
 5. Apply migrations with `python manage.py migrate`.
 6. Start the development server with `python manage.py runserver`.
 
-The application reads `.env` when present. Never commit `.env` or production credentials.
+The application reads `.env` when present. Never commit `.env` or production credentials. In development, Django serves uploads from `/media/`; configure the production web server or storage to serve `MEDIA_ROOT` separately. SaaS subscription renewals use external card-to-card payment and receipt review; no payment gateway is configured.
 

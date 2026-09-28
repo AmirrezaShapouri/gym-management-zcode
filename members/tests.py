@@ -21,6 +21,17 @@ class MemberWorkflowTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, member.full_name)
 
+	def test_member_pagination_preserves_search_query(self):
+		for index in range(26):
+			Member.objects.create(
+				first_name='Bulk', last_name=f'Member {index}', phone=f'0912000{index:04d}',
+			)
+		response = self.client.get('/members/', {'q': 'Bulk', 'page': '2'})
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.context['page_obj'].number, 2)
+		self.assertEqual(len(response.context['members']), 1)
+		self.assertContains(response, 'q=Bulk')
+
 	def test_member_can_be_created_and_updated(self):
 		response = self.client.post('/members/new/', {
 			'first_name': 'علی',

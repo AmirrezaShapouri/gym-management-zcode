@@ -51,3 +51,26 @@ class NotificationWorkflowTests(TestCase):
 		SMSSettings.load()
 		with self.assertRaises(ValidationError):
 			SMSSettings(pk=2).save()
+
+	def test_message_history_survives_member_deletion(self):
+		message = SMSMessage.objects.create(
+			member=self.member,
+			message_type=SMSMessage.TYPE_ANNOUNCEMENT,
+			body='Historical message',
+		)
+		self.member.delete()
+		message.refresh_from_db()
+		self.assertIsNone(message.member)
+		self.assertEqual(str(message), 'عضو حذف‌شده - اعلانیه')
+
+	def test_notification_history_paginates(self):
+		for index in range(26):
+			SMSMessage.objects.create(
+				member=self.member,
+				message_type=SMSMessage.TYPE_ANNOUNCEMENT,
+				body=f'Message {index}',
+			)
+		response = self.client.get('/notifications/?page=2')
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.context['page_obj'].number, 2)
+		self.assertEqual(len(response.context['messages_log']), 1)

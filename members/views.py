@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,7 +14,7 @@ from .models import Member
 def member_list(request):
 	members = Member.objects.select_related('gym_class', 'coach').prefetch_related(
 		'subscriptions__plan'
-	)
+	).order_by('last_name', 'first_name', 'pk')
 	query = request.GET.get('q', '').strip()
 	if query:
 		members = members.filter(
@@ -27,8 +28,10 @@ def member_list(request):
 	plan = request.GET.get('plan', '')
 	if plan in ('12', '36', '120'):
 		members = members.filter(subscriptions__sessions=plan).distinct()
+	page_obj = Paginator(members, 25).get_page(request.GET.get('page'))
 	return render(request, 'members/member_list.html', {
-		'members': members,
+		'members': page_obj,
+		'page_obj': page_obj,
 		'query': query,
 		'status': status,
 		'plan': plan,
