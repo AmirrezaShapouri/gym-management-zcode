@@ -19,7 +19,6 @@ def validate_invoice_image(file):
 
 class GymSettings(models.Model):
     """تنظیمات باشگاه (تک‌نمونه‌ای)."""
-    gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
     gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE,
                                related_name='settings', verbose_name='باشگاه')
     name = models.CharField('نام باشگاه', max_length=120, default='باشگاه ورزشی المپیک')
@@ -65,7 +64,6 @@ class GymSubscription(models.Model):
         (STATUS_ACTIVE, STATUS_ACTIVE),
         (STATUS_EXPIRED, STATUS_EXPIRED),
     ]
-    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='subscriptions', verbose_name='باشگاه')
     PLAN_PRICES = {12: 2500000, 36: 6000000, 120: 25000000}
@@ -109,13 +107,11 @@ class GymSubscriptionRequest(models.Model):
         (STATUS_REJECTED, STATUS_REJECTED),
     ]
 
-    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True,
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE,
                             related_name='subscription_requests', verbose_name='باشگاه')
     sessions = models.PositiveIntegerField('دوره', choices=GymSubscription.SESSION_CHOICES)
     price = models.DecimalField('مبلغ دوره (تومان)', max_digits=12, decimal_places=0,
                                 validators=[MinValueValidator(0)])
-    invoice_image = models.ImageField(
     invoice_image = models.ImageField(
         'تصویر رسید پرداخت', upload_to='gym_subscriptions/invoices/', blank=True,
         validators=[validate_invoice_image],

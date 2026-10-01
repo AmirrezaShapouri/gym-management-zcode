@@ -9,7 +9,6 @@ from core.fields import JalaliDateField
 
 
 class Member(models.Model):
-    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='members', verbose_name='باشگاه')
     first_name = models.CharField('نام', max_length=80)

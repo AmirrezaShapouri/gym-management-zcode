@@ -65,9 +65,9 @@ class GymSubscriptionRequestAdmin(admin.ModelAdmin):
     @admin.action(description='تأیید درخواست‌های انتخاب‌شده')
     def approve_requests(self, request, queryset):
         approved = 0
-        for subscription in queryset.filter(status=GymSubscription.STATUS_PENDING):
+        for subscription_request in queryset.filter(status=GymSubscriptionRequest.STATUS_PENDING):
             try:
-                subscription.approve(request.user)
+                subscription_request.approve(request.user)
             except ValidationError:
                 continue
             approved += 1
@@ -76,11 +76,11 @@ class GymSubscriptionRequestAdmin(admin.ModelAdmin):
     @admin.action(description='رد درخواست‌های انتخاب‌شده (ابتدا دلیل را ثبت کنید)')
     def reject_requests(self, request, queryset):
         rejected = 0
-        for subscription in queryset.filter(status=GymSubscription.STATUS_PENDING):
-            if not subscription.rejection_reason.strip():
+        for subscription_request in queryset.filter(status=GymSubscriptionRequest.STATUS_PENDING):
+            if not subscription_request.rejection_reason.strip():
                 continue
             try:
-                subscription.reject(request.user, subscription.rejection_reason)
+                subscription_request.reject(request.user, subscription_request.rejection_reason)
             except ValidationError:
                 continue
             rejected += 1

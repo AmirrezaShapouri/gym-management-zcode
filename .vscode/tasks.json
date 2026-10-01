@@ -11,6 +11,57 @@
 			],
 			"isBackground": false,
 			"problemMatcher": []
+		},
+		{
+			"label": "Focused Django failure trace",
+			"type": "shell",
+			"command": "\"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"manage.py",
+				"test",
+				"accounts.tests.ProfileRoleTests",
+				"--verbosity",
+				"2"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django check validation",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe\" manage.py check"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django check validation",
+			"type": "shell",
+			"command": "\"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"manage.py",
+				"check"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Shell probe",
+			"type": "shell",
+			"command": "where.exe",
+			"args": [
+				"bash",
+				"python"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
 		}
 	]
 }

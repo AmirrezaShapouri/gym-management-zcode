@@ -6,7 +6,6 @@ from core import jalali
 
 
 class Coach(models.Model):
-    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='coaches', verbose_name='باشگاه')
     full_name = models.CharField('نام و نام خانوادگی', max_length=120)
@@ -21,7 +20,6 @@ class Coach(models.Model):
 
 
 class GymClass(models.Model):
-    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='classes', verbose_name='باشگاه')
     WEEKDAY_CHOICES = [(key, label) for key, label in jalali.WEEKDAY_KEYS]
