@@ -40,6 +40,9 @@ class Member(models.Model):
         }
         if not self.gym_id and len(related_gym_ids) == 1:
             self.gym_id = related_gym_ids.pop()
+        if not self.gym_id:
+            from gyms.models import get_default_gym
+            self.gym = get_default_gym()
         self.clean()
         super().save(*args, **kwargs)
 

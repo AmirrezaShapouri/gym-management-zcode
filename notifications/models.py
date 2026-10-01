@@ -5,6 +5,15 @@ from django.core.exceptions import ValidationError
 class SMSMessage(models.Model):
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='sms_messages', verbose_name='باشگاه')
+
+    def clean(self):
+        super().clean()
+        if self.member_id and self.member.gym_id and self.gym_id and self.member.gym_id != self.gym_id:
+            raise ValidationError({'member': 'پیامک باید به همان باشگاه عضو تعلق داشته باشد.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
     TYPE_CLASS_REMINDER = 'یادآوری کلاس'
     TYPE_SUBSCRIPTION_EXPIRY = 'انقضای اشتراک'
     TYPE_PAYMENT = 'پرداخت'
@@ -63,6 +72,20 @@ class Announcement(models.Model):
     def __str__(self):
         return f'{self.message_type} - {self.sent_at:%Y/%m/%d}'
 
+    def clean(self):
+        super().clean()
+        if self.gym_id and self.pk:
+            invalid_classes = self.classes.exclude(gym_id=self.gym_id)
+            if invalid_classes.exists():
+                raise ValidationError({'classes': 'کلاس‌های انتخاب‌شده باید هم‌باشگاه باشند.'})
+
+    def save(self, *args, **kwargs):
+        if not self.gym_id:
+            from gyms.models import get_default_gym
+            self.gym = get_default_gym()
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
 
 class MemberNotificationSetting(models.Model):
     member = models.OneToOneField('members.Member', on_delete=models.CASCADE,
@@ -83,7 +106,6 @@ class MemberNotificationSetting(models.Model):
 class SMSSettings(models.Model):
     gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE,
                                related_name='sms_settings', verbose_name='باشگاه')
-    """تنظیمات سراسری پیامک (تک‌نمونه‌ای)."""
     enabled = models.BooleanField('فعال‌سازی ارسال پیامک', default=True)
     expiry_sms = models.BooleanField('پیامک انقضای اشتراک', default=True)
     payment_sms = models.BooleanField('پیامک پرداخت', default=True)
@@ -97,6 +119,17 @@ class SMSSettings(models.Model):
     def __str__(self):
         return 'تنظیمات پیامک'
 
+    def save(self, *args, **kwargs):
+        if not self.gym_id:
+            from gyms.models import get_default_gym
+            self.gym = get_default_gym()
+        if self.pk is None and SMSSettings.objects.filter(gym=self.gym).exists():
+            raise ValidationError({'gym': 'برای این باشگاه قبلاً تنظیمات پیامک ثبت شده است.'})
+        return super().save(*args, **kwargs)
+
     @classmethod
-    def load(cls, gym):
+    def load(cls, gym=None):
+        if gym is None:
+            from gyms.models import get_default_gym
+            gym = get_default_gym()
         return cls.objects.get_or_create(gym=gym)[0]

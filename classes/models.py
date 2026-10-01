@@ -18,6 +18,12 @@ class Coach(models.Model):
     def __str__(self):
         return self.full_name
 
+    def save(self, *args, **kwargs):
+        if not self.gym_id:
+            from gyms.models import get_default_gym
+            self.gym = get_default_gym()
+        return super().save(*args, **kwargs)
+
 
 class GymClass(models.Model):
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
@@ -49,6 +55,9 @@ class GymClass(models.Model):
     def save(self, *args, **kwargs):
         if not self.gym_id and self.coach_id:
             self.gym_id = self.coach.gym_id
+        if not self.gym_id:
+            from gyms.models import get_default_gym
+            self.gym = get_default_gym()
         self.clean()
         super().save(*args, **kwargs)
 

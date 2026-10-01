@@ -62,6 +62,298 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "test"
+		},
+		{
+			"label": "Python version probe",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe\" --version"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Bash python probe",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cd '/mnt/d/gym_management project/gym management zcode' && ./.venv/Scripts/python.exe --version"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Delete stale migration file",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"Remove-Item -Path 'D:\\gym_management project\\gym management zcode\\gyms\\migrations\\0006_require_tenant_foreign_keys.py' -Force"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Remove stale gym migration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"Set-Location 'D:\\gym_management project\\gym management zcode\\gyms\\migrations'; Remove-Item .\\0006_require_tenant_foreign_keys.py -Force"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Remove stale gym migration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"Set-Location \"D:\\gym_management project\\gym management zcode\\gyms\\migrations\"; Remove-Item .\\0006_require_tenant_foreign_keys.py -Force"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Temporary Django tests",
+			"type": "shell",
+			"command": "\"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"manage.py",
+				"test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Temporary Django tests",
+			"type": "shell",
+			"command": "\"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"manage.py",
+				"test",
+				"--keepdb"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Check PostgreSQL client",
+			"type": "shell",
+			"command": "where.exe",
+			"args": [
+				"psql"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Django tests reset",
+			"type": "shell",
+			"command": "\"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"-c",
+				"import os, psycopg2; os.environ.setdefault('DJANGO_SETTINGS_MODULE','gym_project.settings'); import django; django.setup(); from django.conf import settings; cfg=settings.DATABASES['default']; name=cfg['NAME']; test_db='test_'+name; conn=psycopg2.connect(dbname='postgres', user=cfg['USER'], password=cfg['PASSWORD'], host=cfg['HOST'], port=cfg['PORT']); conn.autocommit=True; cur=conn.cursor(); cur.execute('DROP DATABASE IF EXISTS %s' % test_db); cur.close(); conn.close(); print('Dropped', test_db); from django.core.management import call_command; call_command('test', verbosity=2)"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run reset and test script",
+			"type": "shell",
+			"command": "& \"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"reset_and_test.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run reset and test script",
+			"type": "shell",
+			"command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+			"args": [
+				"reset_and_test.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run reset and test script",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"reset_and_test.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "CMD probe",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d D:\\gym_management^ project\\gym^ management^ zcode && python --version"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django test run",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d D:\\gym_management^ project\\gym^ management^ zcode && python reset_and_test.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Account failure probe",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d D:\\gym_management^ project\\gym^ management^ zcode && python manage.py test accounts.tests.ProfileRoleTests.test_profile_form_updates_user_and_phone --verbosity 2"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Account failure probe",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d D:\\gym_management^ project\\gym^ management^ zcode && python -c \"import psycopg2; conn=psycopg2.connect(dbname='postgres', user='postgres', password='wrong101', host='localhost', port='5432'); conn.autocommit=True; cur=conn.cursor(); cur.execute('DROP DATABASE IF EXISTS test_gym_management'); conn.close(); print('dropped')\" && python manage.py test accounts.tests.ProfileRoleTests.test_profile_form_updates_user_and_phone --verbosity 2"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django full verification",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d D:\\gym_management^ project\\gym^ management^ zcode && python -c \"import psycopg2; conn=psycopg2.connect(dbname='postgres', user='postgres', password='wrong101', host='localhost', port='5432'); conn.autocommit=True; cur=conn.cursor(); cur.execute('DROP DATABASE IF EXISTS test_gym_management'); conn.close(); print('dropped')\" && python manage.py test --verbosity 2"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django test keepdb verification",
+			"type": "shell",
+			"command": "\"${workspaceFolder}\\.venv\\Scripts\\python.exe\"",
+			"args": [
+				"manage.py",
+				"test",
+				"--keepdb",
+				"--verbosity",
+				"2"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Probe python via PowerShell",
+			"type": "shell",
+			"command": "& \"D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe\" --version",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "List short paths",
+			"type": "shell",
+			"command": "dir /x d:\\",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Probe python path with slashes",
+			"type": "shell",
+			"command": "& \"D:/gym_management project/gym management zcode/.venv/Scripts/python.exe\" --version",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Test powershell quoting",
+			"type": "shell",
+			"command": "Write-Host \"hello\"",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Probe python single-quote path",
+			"type": "shell",
+			"command": "& 'D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe' --version",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django check via single-quote path",
+			"type": "shell",
+			"command": "cd 'D:\\gym_management project\\gym management zcode'; & 'D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe' manage.py check",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django migrations check",
+			"type": "shell",
+			"command": "cd 'D:\\gym_management project\\gym management zcode'; & 'D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe' manage.py makemigrations --check --dry-run",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Django full tests keepdb",
+			"type": "shell",
+			"command": "cd 'D:\\gym_management project\\gym management zcode'; & 'D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe' manage.py test --keepdb --verbosity 2",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
 		}
 	]
 }

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 import uuid
@@ -48,11 +49,17 @@ class Payment(models.Model):
     def __str__(self):
         return f'{self.member} - {self.amount:,} تومان'
 
+    def clean(self):
+        super().clean()
+        if self.subscription_id and self.member_id and self.subscription.member_id != self.member_id:
+            raise ValidationError({'subscription': 'اشتراک انتخاب‌شده باید به همان عضو تعلق داشته باشد.'})
+
     def save(self, *args, **kwargs):
         if not self.reference:
             self.reference = f'TRX{uuid.uuid4().hex}'
         if not self.plan_label and self.subscription:
             self.plan_label = self.subscription.plan_sessions_label
+        self.full_clean()
         super().save(*args, **kwargs)
 
 

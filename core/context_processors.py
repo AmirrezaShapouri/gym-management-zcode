@@ -8,9 +8,6 @@ def gym_context(request):
     tenant = profile.gym if profile else None
     if not tenant:
         return {'gym': None}
-    try:
-        gym = GymSettings.load(tenant)
-    except Exception:
-        # قبل از اجرای migrate جدول هنوز وجود ندارد
-        gym = None
-    return {'gym': gym}
+    if not GymSettings.objects.filter(gym=tenant).exists():
+        return {'gym': None}
+    return {'gym': GymSettings.load(tenant)}

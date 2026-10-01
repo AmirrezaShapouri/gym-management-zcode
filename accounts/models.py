@@ -28,6 +28,15 @@ class Profile(models.Model):
     def __str__(self):
         return f'{self.user.username} ({self.get_role_display()})'
 
+    def save(self, *args, **kwargs):
+        if not self.gym_id and not self.user_id:
+            from gyms.models import get_default_gym
+            self.gym = get_default_gym()
+        elif not self.gym_id and self.user_id:
+            from gyms.models import get_default_gym
+            self.gym = getattr(self.user, 'profile', None).gym if getattr(self.user, 'profile', None) and getattr(self.user.profile, 'gym', None) else get_default_gym()
+        return super().save(*args, **kwargs)
+
     @property
     def is_active_user(self):
         return self.user.is_active
