@@ -2,15 +2,24 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.utils.html import format_html
 
-from .models import GymSettings, GymSubscription
+from .models import Gym, GymSettings, GymSubscription, GymSubscriptionRequest
+
+
+@admin.register(Gym)
+class GymAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'is_active', 'created_at')
+    search_fields = ('name', 'slug')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(GymSettings)
 class GymSettingsAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone')
+    list_display = ('gym', 'name', 'phone')
 
     def has_add_permission(self, request):
-        return not GymSettings.objects.exists()
+        return True
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -18,16 +27,22 @@ class GymSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(GymSubscription)
 class GymSubscriptionAdmin(admin.ModelAdmin):
-    list_display = (
-        'sessions', 'price', 'submitted_at', 'status', 'invoice_link', 'reviewed_at', 'reviewed_by',
-    )
+    list_display = ('gym', 'sessions', 'price', 'start_date', 'end_date', 'status')
     list_filter = ('status', 'sessions')
-    search_fields = ('rejection_reason',)
-    readonly_fields = ('price', 'start_date', 'end_date', 'status', 'submitted_at',
-                       'reviewed_at', 'reviewed_by', 'invoice_preview')
+    readonly_fields = ('created_at',)
+
+
+@admin.register(GymSubscriptionRequest)
+class GymSubscriptionRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        'gym', 'sessions', 'price', 'submitted_at', 'status', 'invoice_link', 'reviewed_at', 'reviewed_by',
+    )
+    list_filter = ('status', 'sessions', 'gym')
+    search_fields = ('gym__name', 'rejection_reason')
+    readonly_fields = ('price', 'submitted_at', 'status', 'reviewed_at', 'reviewed_by', 'invoice_preview')
     fields = (
-        'sessions', 'price', 'invoice_preview', 'invoice_image', 'status', 'submitted_at',
-        'start_date', 'end_date', 'reviewed_at', 'reviewed_by', 'rejection_reason',
+        'gym', 'sessions', 'price', 'invoice_preview', 'invoice_image', 'status', 'submitted_at',
+        'reviewed_at', 'reviewed_by', 'rejection_reason', 'subscription',
     )
     actions = ('approve_requests', 'reject_requests')
 

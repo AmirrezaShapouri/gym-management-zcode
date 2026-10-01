@@ -11,6 +11,8 @@ class PaymentForm(forms.ModelForm):
         self.fields['member'].queryset = Member.objects.filter(gym=gym)
         self.fields['subscription'].queryset = Subscription.objects.filter(member__gym=gym)
         self.gym = gym
+        self.fields['date'].input_formats = ['%Y-%m-%d']
+        self.fields['subscription'].required = False
 
     class Meta:
         model = Payment
@@ -27,11 +29,6 @@ class PaymentForm(forms.ModelForm):
             'note': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['date'].input_formats = ['%Y-%m-%d']
-        self.fields['subscription'].required = False
-
     def clean(self):
         cleaned_data = super().clean()
         subscription = cleaned_data.get('subscription')
@@ -46,6 +43,8 @@ class SubscriptionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['member'].queryset = Member.objects.filter(gym=gym)
         self.fields['plan'].queryset = ClassPlan.objects.filter(gym_class__gym=gym)
+        for field_name in ('start_date', 'end_date'):
+            self.fields[field_name].input_formats = ['%Y-%m-%d']
 
     class Meta:
         model = Subscription
@@ -60,15 +59,11 @@ class SubscriptionForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name in ('start_date', 'end_date'):
-            self.fields[field_name].input_formats = ['%Y-%m-%d']
-
 class ExpenseForm(forms.ModelForm):
     def __init__(self, *args, gym, **kwargs):
         super().__init__(*args, **kwargs)
         self.gym = gym
+        self.fields['date'].input_formats = ['%Y-%m-%d']
 
     def save(self, commit=True):
         expense = super().save(commit=False)
@@ -93,6 +88,4 @@ class ExpenseForm(forms.ModelForm):
             'note': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['date'].input_formats = ['%Y-%m-%d']
+

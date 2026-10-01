@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 
 class SMSMessage(models.Model):
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='sms_messages', verbose_name='باشگاه')
     TYPE_CLASS_REMINDER = 'یادآوری کلاس'
     TYPE_SUBSCRIPTION_EXPIRY = 'انقضای اشتراک'
@@ -46,6 +47,7 @@ class SMSMessage(models.Model):
 
 class Announcement(models.Model):
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='announcements', verbose_name='باشگاه')
     message_type = models.CharField('نوع پیام', max_length=120)
     body = models.TextField('متن اعلانیه')
@@ -82,6 +84,7 @@ class MemberNotificationSetting(models.Model):
 
 class SMSSettings(models.Model):
     gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE,
                                related_name='sms_settings', verbose_name='باشگاه')
     """تنظیمات سراسری پیامک (تک‌نمونه‌ای)."""
     enabled = models.BooleanField('فعال‌سازی ارسال پیامک', default=True)

@@ -4,7 +4,8 @@ from pathlib import Path
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -19,6 +20,7 @@ def validate_invoice_image(file):
 class GymSettings(models.Model):
     """تنظیمات باشگاه (تک‌نمونه‌ای)."""
     gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE,
                                related_name='settings', verbose_name='باشگاه')
     name = models.CharField('نام باشگاه', max_length=120, default='باشگاه ورزشی المپیک')
     phone = models.CharField('شماره تماس', max_length=30, blank=True)
@@ -64,6 +66,7 @@ class GymSubscription(models.Model):
         (STATUS_EXPIRED, STATUS_EXPIRED),
     ]
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='subscriptions', verbose_name='باشگاه')
     PLAN_PRICES = {12: 2500000, 36: 6000000, 120: 25000000}
     PLAN_DURATIONS = {12: 30, 36: 90, 120: 365}
@@ -107,12 +110,14 @@ class GymSubscriptionRequest(models.Model):
     ]
 
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE,
                             related_name='subscription_requests', verbose_name='باشگاه')
     sessions = models.PositiveIntegerField('دوره', choices=GymSubscription.SESSION_CHOICES)
     price = models.DecimalField('مبلغ دوره (تومان)', max_digits=12, decimal_places=0,
                                 validators=[MinValueValidator(0)])
     invoice_image = models.ImageField(
-        'تصویر رسید پرداخت', upload_to='gym_subscriptions/invoices/',
+    invoice_image = models.ImageField(
+        'تصویر رسید پرداخت', upload_to='gym_subscriptions/invoices/', blank=True,
         validators=[validate_invoice_image],
     )
     status = models.CharField('وضعیت', max_length=30, choices=STATUS_CHOICES, default=STATUS_PENDING)
@@ -132,47 +137,70 @@ class GymSubscriptionRequest(models.Model):
         verbose_name = 'درخواست اشتراک SaaS'
         verbose_name_plural = 'درخواست‌های اشتراک SaaS'
         ordering = ('-submitted_at', '-pk')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('gym',),
+                condition=Q(status='در انتظار بررسی'),
+                name='one_pending_subscription_request_per_gym',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.gym} - {self.get_sessions_display()} - {self.get_status_display()}'
 
     def clean(self):
-        if self.sessions in GymSubscription.PLAN_PRICES and self.price != GymSubscription.PLAN_PRICES[self.sessions]:
+        if self.sessions not in GymSubscription.PLAN_PRICES:
+            raise ValidationError({'sessions': 'پلن انتخاب‌شده معتبر نیست.'})
+        if self.price is not None and self.price != GymSubscription.PLAN_PRICES[self.sessions]:
             raise ValidationError({'price': 'مبلغ پلن معتبر نیست.'})
+        if self.subscription_id and self.subscription.gym_id != self.gym_id:
+            raise ValidationError({'subscription': 'اشتراک باید متعلق به همین باشگاه باشد.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def approve(self, reviewer):
-        if self.status != self.STATUS_PENDING:
-            raise ValidationError('فقط درخواست‌های در انتظار بررسی قابل تأیید هستند.')
-        if not self.invoice_image:
-            raise ValidationError('پیش از تأیید باید تصویر رسید ثبت شده باشد.')
-        GymSubscription.expire_due()
-        active = GymSubscription.objects.filter(gym=self.gym, status=GymSubscription.STATUS_ACTIVE)
-        latest_active_end = active.order_by('-end_date').values_list('end_date', flat=True).first()
-        today = timezone.localdate()
-        start_date = max(today, latest_active_end + timedelta(days=1)) if latest_active_end else today
-        subscription = GymSubscription.objects.create(
-            gym=self.gym,
-            sessions=self.sessions,
-            price=self.price,
-            start_date=start_date,
-            end_date=start_date + timedelta(days=GymSubscription.PLAN_DURATIONS[self.sessions] - 1),
-            status=GymSubscription.STATUS_ACTIVE,
-        )
-        self.status = self.STATUS_APPROVED
-        self.reviewed_at = timezone.now()
-        self.reviewed_by = reviewer
-        self.subscription = subscription
-        self.rejection_reason = ''
-        self.save(update_fields=('status', 'reviewed_at', 'reviewed_by', 'subscription', 'rejection_reason'))
-        return subscription
+        with transaction.atomic():
+            request = type(self).objects.select_for_update().get(pk=self.pk)
+            if request.status != self.STATUS_PENDING:
+                raise ValidationError('فقط درخواست‌های در انتظار بررسی قابل تأیید هستند.')
+            if not request.invoice_image:
+                raise ValidationError('پیش از تأیید باید تصویر رسید ثبت شده باشد.')
+            GymSubscription.expire_due(request.gym)
+            latest_active_end = GymSubscription.objects.filter(
+                gym=request.gym,
+                status=GymSubscription.STATUS_ACTIVE,
+            ).order_by('-end_date').values_list('end_date', flat=True).first()
+            today = timezone.localdate()
+            start_date = max(today, latest_active_end + timedelta(days=1)) if latest_active_end else today
+            subscription = GymSubscription.objects.create(
+                gym=request.gym,
+                sessions=request.sessions,
+                price=request.price,
+                start_date=start_date,
+                end_date=start_date + timedelta(days=GymSubscription.PLAN_DURATIONS[request.sessions] - 1),
+                status=GymSubscription.STATUS_ACTIVE,
+            )
+            request.status = self.STATUS_APPROVED
+            request.reviewed_at = timezone.now()
+            request.reviewed_by = reviewer
+            request.subscription = subscription
+            request.rejection_reason = ''
+            request.save(update_fields=('status', 'reviewed_at', 'reviewed_by', 'subscription', 'rejection_reason'))
+            self.refresh_from_db()
+            return subscription
 
     def reject(self, reviewer, reason):
-        if self.status != self.STATUS_PENDING:
-            raise ValidationError('فقط درخواست‌های در انتظار بررسی قابل رد هستند.')
         if not reason.strip():
             raise ValidationError({'rejection_reason': 'برای رد درخواست، ذکر دلیل الزامی است.'})
-        self.status = self.STATUS_REJECTED
-        self.reviewed_at = timezone.now()
-        self.reviewed_by = reviewer
-        self.rejection_reason = reason.strip()
-        self.save(update_fields=('status', 'reviewed_at', 'reviewed_by', 'rejection_reason'))
+        with transaction.atomic():
+            request = type(self).objects.select_for_update().get(pk=self.pk)
+            if request.status != self.STATUS_PENDING:
+                raise ValidationError('فقط درخواست‌های در انتظار بررسی قابل رد هستند.')
+            request.status = self.STATUS_REJECTED
+            request.reviewed_at = timezone.now()
+            request.reviewed_by = reviewer
+            request.rejection_reason = reason.strip()
+            request.save(update_fields=('status', 'reviewed_at', 'reviewed_by', 'rejection_reason'))
+            self.refresh_from_db()

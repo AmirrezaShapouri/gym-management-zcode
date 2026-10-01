@@ -74,7 +74,7 @@ def profile(request):
 		'gym_subscription': active_subscription,
 		'pending_request': pending_request,
 		'latest_rejected': latest_rejected,
-		'gym_subscription_request_form': GymSubscriptionRequestForm(),
+		'gym_subscription_request_form': GymSubscriptionRequestForm(gym=request.gym),
 		'gym_settings': GymSettings.load(request.gym),
 		'sms_settings': SMSSettings.load(request.gym),
 	})

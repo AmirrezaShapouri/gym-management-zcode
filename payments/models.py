@@ -58,6 +58,7 @@ class Payment(models.Model):
 
 class Expense(models.Model):
     gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, null=True, blank=True,
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE,
                             related_name='expenses', verbose_name='باشگاه')
     CATEGORY_SALARY = 'حقوق و دستمزد'
     CATEGORY_RENT = 'اجاره و قبوض'
