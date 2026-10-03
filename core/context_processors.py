@@ -8,6 +8,7 @@ def gym_context(request):
     tenant = profile.gym if profile else None
     if not tenant:
         return {'gym': None}
-    if not GymSettings.objects.filter(gym=tenant).exists():
+    gym_settings = GymSettings.objects.filter(gym=tenant).first()
+    if not gym_settings:
         return {'gym': None}
-    return {'gym': GymSettings.load(tenant)}
+    return {'gym': gym_settings}

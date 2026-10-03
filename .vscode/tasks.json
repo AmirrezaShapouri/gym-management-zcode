@@ -354,6 +354,14 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "test"
+		},
+		{
+			"label": "Single account test keepdb",
+			"type": "shell",
+			"command": "cd 'D:\\gym_management project\\gym management zcode'; & 'D:\\gym_management project\\gym management zcode\\.venv\\Scripts\\python.exe' manage.py test accounts.tests.ProfileRoleTests.test_profile_form_updates_user_and_phone --verbosity 2 --keepdb",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
 		}
 	]
 }

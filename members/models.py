@@ -35,14 +35,6 @@ class Member(models.Model):
                 raise ValidationError('کلاس و مربی باید متعلق به همین باشگاه باشند.')
 
     def save(self, *args, **kwargs):
-        related_gym_ids = {
-            related.gym_id for related in (self.gym_class, self.coach) if related is not None
-        }
-        if not self.gym_id and len(related_gym_ids) == 1:
-            self.gym_id = related_gym_ids.pop()
-        if not self.gym_id:
-            from gyms.models import get_default_gym
-            self.gym = get_default_gym()
         self.clean()
         super().save(*args, **kwargs)
 

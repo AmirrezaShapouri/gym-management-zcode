@@ -19,9 +19,6 @@ class Coach(models.Model):
         return self.full_name
 
     def save(self, *args, **kwargs):
-        if not self.gym_id:
-            from gyms.models import get_default_gym
-            self.gym = get_default_gym()
         return super().save(*args, **kwargs)
 
 
@@ -53,11 +50,6 @@ class GymClass(models.Model):
             raise ValidationError({'coach': 'مربی باید متعلق به همین باشگاه باشد.'})
 
     def save(self, *args, **kwargs):
-        if not self.gym_id and self.coach_id:
-            self.gym_id = self.coach.gym_id
-        if not self.gym_id:
-            from gyms.models import get_default_gym
-            self.gym = get_default_gym()
         self.clean()
         super().save(*args, **kwargs)
 

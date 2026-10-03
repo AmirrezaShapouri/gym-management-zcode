@@ -80,9 +80,6 @@ class Announcement(models.Model):
                 raise ValidationError({'classes': 'کلاس‌های انتخاب‌شده باید هم‌باشگاه باشند.'})
 
     def save(self, *args, **kwargs):
-        if not self.gym_id:
-            from gyms.models import get_default_gym
-            self.gym = get_default_gym()
         self.full_clean()
         return super().save(*args, **kwargs)
 
@@ -120,9 +117,6 @@ class SMSSettings(models.Model):
         return 'تنظیمات پیامک'
 
     def save(self, *args, **kwargs):
-        if not self.gym_id:
-            from gyms.models import get_default_gym
-            self.gym = get_default_gym()
         if self.pk is None and SMSSettings.objects.filter(gym=self.gym).exists():
             raise ValidationError({'gym': 'برای این باشگاه قبلاً تنظیمات پیامک ثبت شده است.'})
         return super().save(*args, **kwargs)
@@ -130,6 +124,5 @@ class SMSSettings(models.Model):
     @classmethod
     def load(cls, gym=None):
         if gym is None:
-            from gyms.models import get_default_gym
-            gym = get_default_gym()
+            raise ValueError('SMSSettings.load() requires an explicit gym instance or primary key.')
         return cls.objects.get_or_create(gym=gym)[0]

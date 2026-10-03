@@ -17,14 +17,6 @@ def validate_invoice_image(file):
         raise ValidationError('حجم تصویر رسید نباید بیشتر از ۵ مگابایت باشد.')
 
 
-def get_default_gym():
-    from .models import Gym
-    gym = Gym.objects.order_by('pk').first()
-    if gym is None:
-        gym = Gym.objects.create(name='Default Gym', slug='default-gym')
-    return gym
-
-
 class GymSettings(models.Model):
     """تنظیمات باشگاه (تک‌نمونه‌ای)."""
     gym = models.OneToOneField('gyms.Gym', on_delete=models.CASCADE,
@@ -44,8 +36,6 @@ class GymSettings(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.gym_id:
-            self.gym = get_default_gym()
         if self.pk is None and GymSettings.objects.filter(gym=self.gym).exists():
             raise ValidationError({'gym': 'برای این باشگاه قبلاً تنظیمات ثبت شده است.'})
         return super().save(*args, **kwargs)
@@ -53,7 +43,7 @@ class GymSettings(models.Model):
     @classmethod
     def load(cls, gym=None):
         if gym is None:
-            gym = get_default_gym()
+            raise ValueError('GymSettings.load() requires an explicit gym instance or primary key.')
         return cls.objects.get_or_create(gym=gym, defaults={'name': gym.name})[0]
 
 
@@ -103,8 +93,6 @@ class GymSubscription(models.Model):
         return f'{self.gym} - {self.get_sessions_display()} - {self.end_date}'
 
     def save(self, *args, **kwargs):
-        if not self.gym_id:
-            self.gym = get_default_gym()
         return super().save(*args, **kwargs)
 
     @classmethod
@@ -175,8 +163,6 @@ class GymSubscriptionRequest(models.Model):
             raise ValidationError({'subscription': 'اشتراک باید متعلق به همین باشگاه باشد.'})
 
     def save(self, *args, **kwargs):
-        if not self.gym_id:
-            self.gym = get_default_gym()
         self.full_clean()
         return super().save(*args, **kwargs)
 
